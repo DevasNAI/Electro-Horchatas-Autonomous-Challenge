@@ -16,5 +16,5 @@
 #### I'm using docker so pls use it if you want to replicate my work :)
 
 ## Enjoy!!!
-![pedro-racoon](https://github.com/PPMike/PPMike/blob/main/Images/pedro-racoon.gif)
+<img src="https://github.com/PPMike/PPMike/blob/main/Images/pedro-racoon.gif" width="400">
 
