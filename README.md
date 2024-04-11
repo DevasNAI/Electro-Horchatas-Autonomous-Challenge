@@ -16,4 +16,4 @@
 #### I'm using docker so pls use it if you want to replicate my work :)
 
 ## Enjoy!!!
-![pedro-racoon](https://github.com/DevasNAI/Electro-Horchatas-Autonomous-Challenge/assets/74674465/0d5698d4-fe38-422c-875a-6c5704cd3965)
+![pedro-racoon](https://github.com/PPMike/PPMike/blob/main/Images/pedro-racoon.gif)
