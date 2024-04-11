@@ -17,3 +17,4 @@
 
 ## Enjoy!!!
 ![pedro-racoon](https://github.com/PPMike/PPMike/blob/main/Images/pedro-racoon.gif)
+<img src="https://github.com/PPMike/PPMike/blob/main/Images/pedro-racoon.gif" width="300">
