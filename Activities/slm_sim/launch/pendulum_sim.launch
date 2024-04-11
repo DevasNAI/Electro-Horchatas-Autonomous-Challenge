@@ -11,6 +11,7 @@
 
     <node pkg="slm_sim" type="slm_sim.py" name="SLM_Sim" />
 
+
     <!--Joint State Publisher --> <!--Uncomment for TESTING ONLY (COMMENT YOUR JOINT STATE PUBLISHER)-->    
     <!--<node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui">
     </node>-->
@@ -18,11 +19,5 @@
     <arg name="rvizconfig" default="$(find slm_sim)/rviz/manipulator.rviz" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" /> 
 
-    <!-- Launch the rqt_plot node -->
-    <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot" output="screen">
-        <!-- Specify the topic to plot -->
-        <remap from="/desired_topic" to="/pos"/>
-        <remap from="/desired_topic2" to="/vel"/>
-    </node>
 
 </launch>
