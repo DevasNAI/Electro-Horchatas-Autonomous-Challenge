@@ -1,4 +1,4 @@
-# Mike's 98 Toyoya Corolla
+# Mike's 98 Toyota Corolla
 
 #### This is a branch where Mike will save all his work about the new challenges.
 
