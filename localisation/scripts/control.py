@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist, PoseStamped, Pose
 from nav_msgs.msg import Odometry
 
 
-Kp = 0.035
+Kp = 0.05
 trajectories = {
     "square": [(1, 0), (1, 1), (0, 1), (0, 0)],
     "pentagon": [(1, 0), (0.5, 0.87), (-0.5, 0.87), (-1, 0), (-0.5, -0.87)],
@@ -68,7 +68,7 @@ if __name__ == '__main__':
                         errorTheta = abs(math.atan2(errory,errorx) - theta)
                         if abs(errorTheta) < 0.01:
                             theta_set = True
-                        cmd_vel.angular.z = Kp * 2 * errorTheta
+                        cmd_vel.angular.z = Kp * 100 * errorTheta
                     else:
                         errorDistance = math.sqrt(errorx**2 + errory**2)
                         cmd_vel.linear.x = Kp * errorDistance

@@ -31,16 +31,15 @@ def odometry_pub(wl, wr, dt):
 
     linear_vel = (left_wheel_vel + right_wheel_vel) / 2
     angular_vel = r*(right_wheel_vel - left_wheel_vel) / 0.19
-
-    linear_vel_x = linear_vel * math.cos(theta) 
-    linear_vel_y = linear_vel * math.sin(theta)
-    theta += angular_vel
-
-    x += linear_vel_x*dt
-    y += linear_vel_y*dt
     
     theta += angular_vel*dt
     theta = theta % (2*math.pi) # Normalize angle
+
+    linear_vel_x = linear_vel * math.cos(theta) 
+    linear_vel_y = linear_vel * math.sin(theta)
+
+    x += linear_vel_x*dt
+    y += linear_vel_y*dt
 
     # Create odometry message
     odom_msg = Odometry()

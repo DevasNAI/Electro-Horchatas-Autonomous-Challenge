@@ -40,7 +40,6 @@ def main():
         prev_time = currentTime
 
         pose.header.stamp = rospy.Time.now()
-
         pose.pose.position.x += vel.linear.x*dt*math.cos(pose.pose.orientation.z)
         pose.pose.position.y += vel.linear.x*dt*math.sin(pose.pose.orientation.z)
         pose.pose.position.z = 0
