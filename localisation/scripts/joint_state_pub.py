@@ -40,12 +40,12 @@ if __name__ == '__main__':
         odom_trans.header.stamp = rospy.Time.now()
         odom_trans.header.frame_id = "odom"
         odom_trans.child_frame_id = "base_link"
-        odom_trans.transform.translation.x = odom.pose.pose.position.x
-        odom_trans.transform.translation.y = odom.pose.pose.position.y
-        odom_trans.transform.translation.z = odom.pose.pose.position.z
+        odom_trans.transform.translation = odom.pose.pose.position
+        # print(odom.pose.pose.position)
         odom_trans.transform.rotation = odom.pose.pose.orientation
 
         tf_broadcaster.sendTransform(odom_trans)
+        
         # Calculate the time elapsed since the last callback
         current_time = rospy.Time.now().to_sec()
         dt = current_time - prev_time

@@ -38,16 +38,15 @@ def odometry_pub(wl, wr, dt):
 
     x += linear_vel_x*dt
     y += linear_vel_y*dt
-    x = 0.0
-    y = 0.0
+    
     theta += angular_vel*dt
     theta = theta % (2*math.pi) # Normalize angle
 
     # Create odometry message
     odom_msg = Odometry()
     odom_msg.header.stamp = rospy.Time.now()
-    odom_msg.header.frame_id = 'base_link'
-    odom_msg.child_frame_id = 'chassis'
+    odom_msg.header.frame_id = 'odom'
+    odom_msg.child_frame_id = 'base_link'
 
     odom_msg.pose.pose.position.x = x
     odom_msg.pose.pose.position.y = y
