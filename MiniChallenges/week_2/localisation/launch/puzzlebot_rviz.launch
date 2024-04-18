@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+        <node pkg="tf2_ros" type="static_transform_publisher" name="map_joint" args="odomPose_x  odomPose_y  odomPose_z  odomPose_roll  odomPose_pitch  odomPose_yaw   map   odom"/>
+
+        <arg name="puzzlebot_sim_model" default="$(find localisation)/urdf/puzzlebot_jetson_ed_urdf.urdf"/>
+        <param name="robot_description" command="cat $(arg puzzlebot_sim_model)" />
+
+        <!--My own node PPMike jiji-->
+        <node name="math_operations" pkg="localisation" type="poseEstimation.py" />
+        <node name="pose_generation" pkg="localisation" type="localisation.py" />
+        <node name="puzzlebot_joint_state" pkg="localisation" type="joint_state_pub.py" />
+        <node name="control" pkg="localisation" type="control.py" />
+
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="simulated_state_publisher" output="screen"/>
+        <!-- <node name="rviz" pkg="rviz" type="rviz"/> -->
+        <arg name="rvizconfig" default="$(find localisation)/rviz/localization.rviz" />
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" /> 
+</launch>
