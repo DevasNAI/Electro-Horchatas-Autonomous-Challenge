@@ -55,17 +55,19 @@ class localization:
         #   Covariance constats
         self.kr = 1.0
         self.kl = 1.0
-        self.SigmakPast = np.matrix([0, 0, 0], [0,0,0], [0,0,0])
-        self.covarianceMatrix = np.matrix([0, 0, 0, 0, 0, 0],
+        self.SigmakPast = np.matrix([[0, 0, 0], [0,0,0], [0,0,0]])
+        self.covarianceMatrix = np.matrix([[0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
-                                           [0, 0, 0, 0, 0, 0])
-        self.covarianceInit()
+                                           [0, 0, 0, 0, 0, 0]])
+        
         self.matrixH = 6
         self.matrixW = 6
+        self.prevTime = rospy.Time.now()
 
+        self.covarianceInit()
         #   Node Subscriptions
         rospy.Subscriber("/wl", Float32, self.wl_cb)
         rospy.Subscriber("/wr", Float32, self.wr_cb)
@@ -78,13 +80,13 @@ class localization:
         self.wr = msg
 
     def covarianceInit(self):
-        self.covariance64.layout.dim[0].label = "height"
-        self.covariance64.layout.dim[1].label = "width"
-        self.covariance64.layout.dim[0].size = self.matrixH
-        self.covariance64.layout.dim[1].size = self.matrixW
-        self.covariance64.layout.dim[0].stride = self.matrixH * self.matrixW
-        self.covariance64.layout.dim[1].stride = self.matrixW
-        self.covariance64.layout.data_offset = 0
+        #self.covariance64.layout.dim[0].label = "height"
+        #self.covariance64.layout.dim[1].label = "width"
+        #self.covariance64.layout.dim[0].size = self.matrixH
+        #self.covariance64.layout.dim[1].size = self.matrixW
+        #self.covariance64.layout.dim[0].stride = self.matrixH * self.matrixW
+        #self.covariance64.layout.dim[1].stride = self.matrixW
+        #self.covariance64.layout.data_offset = 0
 
         self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
 
@@ -104,13 +106,13 @@ class localization:
 
         
         """
-        Hk = np.matrix([1, 0, -dt*self.linearX*np.sin(self.thetaPast)],
+        Hk = np.matrix([[1, 0, -dt*self.linearX*np.sin(self.thetaPast)],
                        [0, 0, dt*self.linearX*np.cos(self.thetaPast)],
-                       [0, 0, 1])
-        Sigmadeltak = np.matrix([self.kr * abs(self.wr)], [0, self.kl * abs(self.wl)])
-        GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([np.cos(self.thetaPast), np.cos(self.thetaPast)],
+                       [0, 0, 1]])
+        Sigmadeltak = np.matrix([[self.kr * abs(self.wr)], [0, self.kl * abs(self.wl)]])
+        GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
                                                                    [np.sin(self.thetaPast), np.sin(self.thetaPast)],
-                                                                   [2/self.l, -2/self.l])
+                                                                   [2/self.l, -2/self.l]])
         Qk = GradientOmegak * Sigmadeltak * np.transpose(GradientOmegak)
 
         Sigmak = Hk * self.SigmakPast * np.transpose(Hk) + Qk
