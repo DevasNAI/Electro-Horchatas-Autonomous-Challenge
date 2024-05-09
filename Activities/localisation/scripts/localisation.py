@@ -8,6 +8,7 @@ import numpy as np
 from std_msgs.msg import Float32
 from std_msgs.msg import Time
 from std_msgs.msg import Header
+from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from std_msgs.msg import MultiArrayLayout
 from std_msgs.msg import MultiArrayDimension
@@ -48,6 +49,7 @@ class localization:
         self.points = Point()
         self.poses = Pose()
         self.headerPose = Header()
+        self.arreglo64 = Float64()
         self.odomPose = PoseStamped()
         self.covariancePose = PoseWithCovariance()
         self.covarianceTwist = TwistWithCovariance()
@@ -62,7 +64,7 @@ class localization:
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0]])
-        
+        self.covLayout = MultiArrayLayout()
         self.matrixH = 6
         self.matrixW = 6
         self.prevTime = rospy.Time.now()
@@ -80,6 +82,10 @@ class localization:
         self.wr = msg
 
     def covarianceInit(self):
+        self.covLayout.dim.append(MultiArrayDimension("height", self.matrixH, self.matrixH * self.matrixW))
+        self.covLayout.dim.append(MultiArrayDimension("width", self.matrixW, self.matrixW))
+        self.covLayout.data_offset = 0
+        self.covariance64.layout = self.covLayout
         #self.covariance64.layout.dim[0].label = "height"
         #self.covariance64.layout.dim[1].label = "width"
         #self.covariance64.layout.dim[0].size = self.matrixH
@@ -87,8 +93,8 @@ class localization:
         #self.covariance64.layout.dim[0].stride = self.matrixH * self.matrixW
         #self.covariance64.layout.dim[1].stride = self.matrixW
         #self.covariance64.layout.data_offset = 0
-
-        self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
+        self.arreglo64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
+        self.covariance64.data = self.arreglo64#[[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
 
     def calculate_cmdVel(self):
         #   Assigns linear and angular velocity 
@@ -109,7 +115,7 @@ class localization:
         Hk = np.matrix([[1, 0, -dt*self.linearX*np.sin(self.thetaPast)],
                        [0, 0, dt*self.linearX*np.cos(self.thetaPast)],
                        [0, 0, 1]])
-        Sigmadeltak = np.matrix([[self.kr * abs(self.wr)], [0, self.kl * abs(self.wl)]])
+        Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0], [0, self.kl * abs(self.wl)]])
         GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
                                                                    [np.sin(self.thetaPast), np.sin(self.thetaPast)],
                                                                    [2/self.l, -2/self.l]])
@@ -131,6 +137,7 @@ class localization:
         #   Maybe I should make it a return function so its easier to access and
         #   less variables are here.
         self.covariance64.data = self.covarianceMatrix.tolist()
+        print(type(self.covariance64.data))
 
         
 
