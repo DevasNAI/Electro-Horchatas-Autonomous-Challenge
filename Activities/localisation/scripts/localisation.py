@@ -11,6 +11,10 @@ from geometry_msgs.msg import Twist, PoseWithCovariance, TwistWithCovariance, Po
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 from tf.transformations import quaternion_from_euler
+from geometry_msgs.msg import TransformStamped
+import tf
+import tf.transformations
+import tf_conversions
 
 class localization:
     def __init__(self):
@@ -57,6 +61,9 @@ class localization:
         rospy.Subscriber("/wr", Float32, self.wr_cb)
         #   Node Publishers
         self.odometry_pub = rospy.Publisher("odom", Odometry, queue_size=10)
+
+        self.tf_broadcaster = tf.TransformBroadcaster()
+        
         print("Node Init successfull")
     
     def wl_cb(self, msg):
@@ -107,22 +114,37 @@ class localization:
                                                                    [2/self.l, -2/self.l]])
         Qk = GradientOmegak * Sigmadeltak * np.transpose(GradientOmegak)
 
-        Sigmak = Hk * self.SigmakPast * np.transpose(Hk) + Qk
+        Sigmak = np.dot(np.dot(Hk, self.SigmakPast),Hk) + Qk
+        self.SigmakPast = Sigmak
 
-        self.covarianceMatrix[0, 0] = Sigmak[0,0]   # xx
-        self.covarianceMatrix[1, 0] = Sigmak[1,0]   # yx
-        self.covarianceMatrix[5, 0] = Sigmak[2,0]   # thetax
-        self.covarianceMatrix[0, 1] = Sigmak[0,1]   # xy
-        self.covarianceMatrix[1, 1] = Sigmak[1,1]   # yy
-        self.covarianceMatrix[5, 1] = Sigmak[2,1]   # thetay
-        self.covarianceMatrix[0, 5] = Sigmak[0,2]   # xtheta
-        self.covarianceMatrix[1, 5] = Sigmak[1,2]   # ytheta
-        self.covarianceMatrix[5, 5] = Sigmak[2,2]   # thetatheta
+
+        self.odometry.pose.covariance[0] = Sigmak[0, 0]
+        self.odometry.pose.covariance[1] = Sigmak[0, 1]
+        self.odometry.pose.covariance[5] = Sigmak[0, 2]
+        self.odometry.pose.covariance[6] = Sigmak[1, 0]
+        self.odometry.pose.covariance[7] = Sigmak[1, 1]
+        self.odometry.pose.covariance[11] = Sigmak[1, 2]
+        self.odometry.pose.covariance[30] = Sigmak[2, 0]
+        self.odometry.pose.covariance[31] = Sigmak[2, 1]
+        self.odometry.pose.covariance[35] = Sigmak[2, 2]
+
+
+        #self.covarianceMatrix[0, 0] = Sigmak[0,0]   # xx
+        #self.covarianceMatrix[1, 0] = Sigmak[1,0]   # yx
+        #self.covarianceMatrix[5, 0] = Sigmak[2,0]   # thetax
+        #self.covarianceMatrix[0, 1] = Sigmak[0,1]   # xy
+        #self.covarianceMatrix[1, 1] = Sigmak[1,1]   # yy
+        #self.covarianceMatrix[5, 1] = Sigmak[2,1]   # thetay
+        #self.covarianceMatrix[0, 5] = Sigmak[0,2]   # xtheta
+        #self.covarianceMatrix[1, 5] = Sigmak[1,2]   # ytheta
+        #self.covarianceMatrix[5, 5] = Sigmak[2,2]   # thetatheta
+        #covMatriz = self.covarianceMatrix.flatten().tolist()[0]
+
 
         #   Inits Covariance Matrix FLoat64MultiArray message
         #   Maybe I should make it a return function so its easier to access and
         #   less variables are here.
-        self.covariance64.data = self.covarianceMatrix.flatten().tolist()[0]
+        #self.covariance64.data = self.covarianceMatrix.flatten().tolist()[0]
 
         
 
@@ -156,35 +178,41 @@ class localization:
         self.cmdVel.angular = self.angularZ
         self.cmdVel.linear = self.linearX
 
+        #   INitialize odometry message
         #self.odometry.twist.covariance = self.covariance.da
         self.odometry.header.stamp = rospy.Time.now()
-        self.odometry.header.frame_id = "odom"
-        self.odometry.child_frame_id = "base_link"
+        self.odometry.header.frame_id = 'odom'
+        self.odometry.child_frame_id = 'base_link'
+        self.odometry.pose.pose.position.x = self.x
+        self.odometry.pose.pose.position.y = self.y
+        self.odometry.pose.pose.position.z = 0.0
 
-        #   Get Quaternion message
-        #self.euler2quater = quaternion_from_euler(self.points.x, self.points.y, self.points.z)
-        self.euler2quater = quaternion_from_euler(0, 0, self.theta)
-        self.quaternions.x = self.euler2quater[0]
-        self.quaternions.y = self.euler2quater[1]
-        self.quaternions.z = self.euler2quater[2]
-        self.quaternions.w = self.euler2quater[3]
+        #   Get Quaternion Message
+        self.euler2quater = tf_conversions.transformations.quaternion_from_euler(0, 0, self.theta)
+
+
+        self.odometry.pose.pose.orientation.x = self.euler2quater[0]
+        self.odometry.pose.pose.orientation.y = self.euler2quater[1]
+        self.odometry.pose.pose.orientation.z = self.euler2quater[2]
+        self.odometry.pose.pose.orientation.w = self.euler2quater[3]
+
+        self.odometry.twist.twist.linear.x = self.linearX
+        self.odometry.twist.twist.angular.z = self.angularZ
+        
+        #   Define Transformations
+
+       
 
         #   Assign elements to message Point 
-        self.poses.position = self.points
-        self.poses.orientation = self.quaternions
-        
-        #   Covariance Pose assignment
-        self.covariancePose.pose = self.poses
-        self.covarianceTwist.twist = self.cmdVel
 
         #   Runs the calculations and updates covariance matrix
         self.covarianceCalculation(dt)
 
         #   Assigns nav_msgs/Odometry message elements
-        self.odometry.pose = self.covariancePose
-        self.odometry.twist = self.covarianceTwist
-        self.odometry.pose.covariance = self.covariance64   #   PoseWithCOvariance
-        self.odometry.twist.covariance = self.covariance64  #   TwistWithCovariance
+        #self.odometry.pose = self.covariancePose
+        #self.odometry.twist = self.covarianceTwist
+        #self.odometry.pose.covariance = self.covariance64   #   PoseWithCOvariance
+        #self.odometry.twist.covariance = self.covariance64  #   TwistWithCovariance
 
 
         #   Publish Pose
