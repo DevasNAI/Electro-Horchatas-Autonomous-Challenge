@@ -3,30 +3,14 @@
 #    A01245418 Andres Sarellano
 #   Localization node for Dead Reckoning
 
+
 import rospy
 import numpy as np
-from std_msgs.msg import Float32
-from std_msgs.msg import Time
-from std_msgs.msg import Header
-from std_msgs.msg import Float64
-from std_msgs.msg import Float64MultiArray
-from std_msgs.msg import MultiArrayLayout
-from std_msgs.msg import MultiArrayDimension
-from geometry_msgs.msg import Twist
+from std_msgs.msg import Float32, Time, Header, Float64MultiArray, MultiArrayDimension, MultiArrayLayout
+from geometry_msgs.msg import Twist, PoseWithCovariance, TwistWithCovariance, PoseStamped, Pose, Point, Quaternion
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import PoseWithCovariance
-from geometry_msgs.msg import TwistWithCovariance
-from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Pose
-from geometry_msgs.msg import Point
-from geometry_msgs.msg import Quaternion
-
-
 from sensor_msgs.msg import JointState
 from tf.transformations import quaternion_from_euler
-
-
-
 
 class localization:
     def __init__(self):
@@ -49,7 +33,6 @@ class localization:
         self.points = Point()
         self.poses = Pose()
         self.headerPose = Header()
-        self.arreglo64 = Float64()
         self.odomPose = PoseStamped()
         self.covariancePose = PoseWithCovariance()
         self.covarianceTwist = TwistWithCovariance()
@@ -64,37 +47,40 @@ class localization:
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0]])
-        self.covLayout = MultiArrayLayout()
         self.matrixH = 6
         self.matrixW = 6
+        self.covarianceInit()
         self.prevTime = rospy.Time.now()
 
-        self.covarianceInit()
         #   Node Subscriptions
         rospy.Subscriber("/wl", Float32, self.wl_cb)
         rospy.Subscriber("/wr", Float32, self.wr_cb)
         #   Node Publishers
-        self.odometry_pub = rospy.Publisher("/odom", Float32, queue_size=1)
+        self.odometry_pub = rospy.Publisher("odom", Odometry, queue_size=10)
+        print("Node Init successfull")
     
     def wl_cb(self, msg):
-        self.wl = msg
+        self.wl = msg.data
     def wr_cb(self, msg):
-        self.wr = msg
+        self.wr = msg.data
 
     def covarianceInit(self):
-        self.covLayout.dim.append(MultiArrayDimension("height", self.matrixH, self.matrixH * self.matrixW))
-        self.covLayout.dim.append(MultiArrayDimension("width", self.matrixW, self.matrixW))
-        self.covLayout.data_offset = 0
-        self.covariance64.layout = self.covLayout
-        #self.covariance64.layout.dim[0].label = "height"
-        #self.covariance64.layout.dim[1].label = "width"
-        #self.covariance64.layout.dim[0].size = self.matrixH
-        #self.covariance64.layout.dim[1].size = self.matrixW
-        #self.covariance64.layout.dim[0].stride = self.matrixH * self.matrixW
-        #self.covariance64.layout.dim[1].stride = self.matrixW
-        #self.covariance64.layout.data_offset = 0
-        self.arreglo64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
-        self.covariance64.data = self.arreglo64#[[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
+        item = MultiArrayDimension()
+        item.label = "height"
+        item.size = self.matrixH
+        item.stride = self.matrixH * self.matrixW
+
+        self.covariance64.layout.dim.append(item)
+        
+        item.label = "width"
+        item.size = self.matrixW
+        item.stride = self.matrixW
+
+        self.covariance64.layout.dim.append(item)
+        self.covariance64.layout.data_offset = 0
+
+        self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
+        self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
 
     def calculate_cmdVel(self):
         #   Assigns linear and angular velocity 
@@ -108,13 +94,13 @@ class localization:
             [ sigma_yx        sigma_yy        sigma_ytheta     ]
             [ sigma_theta_x   sigma_thetay    sigma_thetatheta ]
 
-            @dt Time Differential
+            @param dt Time Differential
 
         
         """
-        Hk = np.matrix([[1, 0, -dt*self.linearX*np.sin(self.thetaPast)],
-                       [0, 0, dt*self.linearX*np.cos(self.thetaPast)],
-                       [0, 0, 1]])
+        Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],
+                       [0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],
+                       [0.0, 0.0, 1.0]])
         Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0], [0, self.kl * abs(self.wl)]])
         GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
                                                                    [np.sin(self.thetaPast), np.sin(self.thetaPast)],
@@ -136,8 +122,7 @@ class localization:
         #   Inits Covariance Matrix FLoat64MultiArray message
         #   Maybe I should make it a return function so its easier to access and
         #   less variables are here.
-        self.covariance64.data = self.covarianceMatrix.tolist()
-        print(type(self.covariance64.data))
+        self.covariance64.data = self.covarianceMatrix.flatten().tolist()[0]
 
         
 
@@ -145,7 +130,7 @@ class localization:
 
         #   Obtain current time for integration
         self.currentTime = rospy.Time.now()
-        dt = (self.currentTime - self.prevTime).to_sec()
+        dt = float((self.currentTime - self.prevTime).to_sec())
 
         self.calculate_cmdVel()
         #   Obtain Theta from angular velocity
@@ -165,14 +150,20 @@ class localization:
         #   Assign linear elements
         self.points.x = self.x
         self.points.y = self.y
-        self.points.z = self.theta
+        self.points.z = 0.0
 
         #   Revisar lo del twist para asignar a cmd_vel
         self.cmdVel.angular = self.angularZ
         self.cmdVel.linear = self.linearX
 
+        #self.odometry.twist.covariance = self.covariance.da
+        self.odometry.header.stamp = rospy.Time.now()
+        self.odometry.header.frame_id = "odom"
+        self.odometry.child_frame_id = "base_link"
+
         #   Get Quaternion message
-        self.euler2quater = quaternion_from_euler(self.points.x, self.points.y, self.points.z)
+        #self.euler2quater = quaternion_from_euler(self.points.x, self.points.y, self.points.z)
+        self.euler2quater = quaternion_from_euler(0, 0, self.theta)
         self.quaternions.x = self.euler2quater[0]
         self.quaternions.y = self.euler2quater[1]
         self.quaternions.z = self.euler2quater[2]
@@ -192,12 +183,9 @@ class localization:
         #   Assigns nav_msgs/Odometry message elements
         self.odometry.pose = self.covariancePose
         self.odometry.twist = self.covarianceTwist
-        self.odometry.pose.covariance = self.covariance64
-        self.odometry.header.stamp = rospy.Time.now()
-        self.odometry.header.frame_id = "base_link"
-        self.odometry.child_frame_id = "odom"
-        
-        
+        self.odometry.pose.covariance = self.covariance64   #   PoseWithCOvariance
+        self.odometry.twist.covariance = self.covariance64  #   TwistWithCovariance
+
 
         #   Publish Pose
         self.odometry_pub.publish(self.odometry)
@@ -207,6 +195,7 @@ class localization:
         self.prevTime = self.currentTime
         #   Update previous position
         self.thetaPast = self.theta
+        print("passed odometry test")
 
 
 
@@ -215,9 +204,10 @@ class localization:
 if __name__=='__main__':
     try:
         #   Node initialization
-        rospy.init_node("localisation")
-        rate = rospy.Rate(10)
+        rospy.init_node("localisation_node")
+        rate = rospy.Rate(100)
         puzz = localization()
+        
         
         while not rospy.is_shutdown():
             puzz.getOdometry()
