@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 #    A01245418 Andres Sarellano
 #   Localization node for Dead Reckoning
@@ -42,8 +42,9 @@ class localization:
         self.covarianceTwist = TwistWithCovariance()
         self.covariance64 = Float64MultiArray()
         #   Covariance constats
-        self.kr = 1.0
-        self.kl = 1.0
+        #TODO   CALIBRAR LOS PARAMETROS CON MINIMOS CUADRADOS
+        self.kr = 1.5
+        self.kl = 0.2   #
         self.SigmakPast = np.matrix([[0, 0, 0], [0,0,0], [0,0,0]])
         self.covarianceMatrix = np.matrix([[0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
@@ -72,20 +73,25 @@ class localization:
         self.wr = msg.data
 
     def covarianceInit(self):
+        """
+            @brief  Initializes the Covariance topic type by default  
+        """
+        #   MultiArrayDimension object
         item = MultiArrayDimension()
         item.label = "height"
         item.size = self.matrixH
         item.stride = self.matrixH * self.matrixW
-
+        #   Adds multiarray dimensions to Covariance layout
         self.covariance64.layout.dim.append(item)
         
         item.label = "width"
         item.size = self.matrixW
         item.stride = self.matrixW
 
+        #   Adds configurations of layout topic to dimension parameter of covariance
         self.covariance64.layout.dim.append(item)
         self.covariance64.layout.data_offset = 0
-
+        #   Sets covariance matrix to 0
         self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
         self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
 
@@ -100,24 +106,37 @@ class localization:
             [ sigma_xx        sigma_xy        sigma_xtheta     ]
             [ sigma_yx        sigma_yy        sigma_ytheta     ]
             [ sigma_theta_x   sigma_thetay    sigma_thetatheta ]
+            The full covariance matrix goes as follows:
+            [ sigma_xx        sigma_xy        sigma_xtheta      sigma_xtheta        sigma_xtheta        sigma_xtheta     ]
+            [ sigma_yx        sigma_yy        sigma_ytheta      sigma_xtheta        sigma_xtheta        sigma_ytheta     ]
+            [ sigma_theta_x   sigma_thetay    sigma_thetatheta  sigma_xtheta        sigma_xtheta        sigma_xtheta     ]
+            [ sigma_xx        sigma_xy        sigma_xtheta      sigma_xtheta        sigma_xtheta        sigma_xtheta     ]
+            [ sigma_yx        sigma_yy        sigma_ytheta      sigma_xtheta        sigma_xtheta        sigma_xtheta     ]
+            [ sigma_theta_x   sigma_thetay    sigma_thetatheta  sigma_xtheta        sigma_xtheta        sigma_thetaheta  ]
 
-            @param dt Time Differential
+            @param dt Time Differential current time - previous time
 
         
         """
+
+        #   H Matrix with the puzzlebot's kinematic model 
         Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],
                        [0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],
                        [0.0, 0.0, 1.0]])
+        #   Sigma calculation for the covariance matrix with covariance constants
         Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0], [0, self.kl * abs(self.wl)]])
+        #   Gradient Velcity calculation with 3 x 3 covariance matrix
         GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
                                                                    [np.sin(self.thetaPast), np.sin(self.thetaPast)],
                                                                    [2/self.l, -2/self.l]])
+        #   Qk Gaussian Matrix 
         Qk = GradientOmegak * Sigmadeltak * np.transpose(GradientOmegak)
-
+        #   Covariance matrix
         Sigmak = np.dot(np.dot(Hk, self.SigmakPast),Hk) + Qk
+        #   Sigma result k - 1 update
         self.SigmakPast = Sigmak
 
-
+        #   Assigns covariance values to covariance matrix of the Odometry message
         self.odometry.pose.covariance[0] = Sigmak[0, 0]
         self.odometry.pose.covariance[1] = Sigmak[0, 1]
         self.odometry.pose.covariance[5] = Sigmak[0, 2]
@@ -149,6 +168,10 @@ class localization:
         
 
     def getOdometry(self):
+        """
+            @brief Assigns Odometry values to /odom message
+        
+        """
 
         #   Obtain current time for integration
         self.currentTime = rospy.Time.now()
@@ -174,11 +197,7 @@ class localization:
         self.points.y = self.y
         self.points.z = 0.0
 
-        #   Revisar lo del twist para asignar a cmd_vel
-        self.cmdVel.angular = self.angularZ
-        self.cmdVel.linear = self.linearX
-
-        #   INitialize odometry message
+        #   Initialize odometry message
         #self.odometry.twist.covariance = self.covariance.da
         self.odometry.header.stamp = rospy.Time.now()
         self.odometry.header.frame_id = 'odom'
@@ -187,24 +206,17 @@ class localization:
         self.odometry.pose.pose.position.y = self.y
         self.odometry.pose.pose.position.z = 0.0
 
-        #   Get Quaternion Message
+        #   Get Quaternion Transform for pose orientation 
         self.euler2quater = tf_conversions.transformations.quaternion_from_euler(0, 0, self.theta)
-
-
         self.odometry.pose.pose.orientation.x = self.euler2quater[0]
         self.odometry.pose.pose.orientation.y = self.euler2quater[1]
         self.odometry.pose.pose.orientation.z = self.euler2quater[2]
         self.odometry.pose.pose.orientation.w = self.euler2quater[3]
 
+        #   Assigns cmd_vel parameters to Odometry message
         self.odometry.twist.twist.linear.x = self.linearX
         self.odometry.twist.twist.angular.z = self.angularZ
         
-        #   Define Transformations
-
-       
-
-        #   Assign elements to message Point 
-
         #   Runs the calculations and updates covariance matrix
         self.covarianceCalculation(dt)
 
@@ -216,8 +228,7 @@ class localization:
 
 
         #   Publish Pose
-        self.odometry_pub.publish(self.odometry)
-        
+        self.odometry_pub.publish(self.odometry)  
 
         #   Update past time
         self.prevTime = self.currentTime
