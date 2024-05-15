@@ -6,8 +6,8 @@
 ### Week 1: Already done.
 ### Week 2: Already done.
 ### Week 3: No challenge.
-### Week 4:
-### Week 5:
+### Week 4: Already done on "andysCorner" branch.
+### Week 5: Work in progress.
 ### Week 6:
 ### Week 7:
 ### Week 8:
