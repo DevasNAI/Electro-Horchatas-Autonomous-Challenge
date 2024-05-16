@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 #    A01245418 Andres Sarellano
-#   Localization node for Dead Reckoning
+#   Localization node for Dead Reckoning IT NOW WORKS :D SHOULD CALCULATE KL AND KR
 
 
 import rospy
@@ -43,58 +43,26 @@ class localization:
         self.covariance64 = Float64MultiArray()
         #   Covariance constats
         #TODO   CALIBRAR LOS PARAMETROS CON MINIMOS CUADRADOS
+        self.kr = 0.15
+        self.kl = 0.30913602108470944 
+        self.SigmakPast = 0.0
 
-        self.kr = 0.30913602108470944  # 0.01 si jala
-        self.kl = 0.4   # 0.4
-        self.SigmakPast = np.matrix([[0, 0, 0], [0,0,0], [0,0,0]])
-        self.covarianceMatrix = np.matrix([[0, 0, 0, 0, 0, 0],
-                                           [0, 0, 0, 0, 0, 0],
-                                           [0, 0, 0, 0, 0, 0],
-                                           [0, 0, 0, 0, 0, 0],
-                                           [0, 0, 0, 0, 0, 0],
-                                           [0, 0, 0, 0, 0, 0]])
-        self.matrixH = 6
-        self.matrixW = 6
-        self.covarianceInit()
         self.prevTime = rospy.Time.now()
 
         #   Node Subscriptions
         rospy.Subscriber("/wl", Float32, self.wl_cb)
         rospy.Subscriber("/wr", Float32, self.wr_cb)
         #   Node Publishers
-        self.odometry_pub = rospy.Publisher("odom", Odometry, queue_size=10)
+        self.odometry_pub = rospy.Publisher("odom", Odometry, queue_size=1)
 
         self.tf_broadcaster = tf.TransformBroadcaster()
         
-        print("Node Init successfull")
+        #print("Node Init successfull")
     
     def wl_cb(self, msg):
         self.wl = msg.data
     def wr_cb(self, msg):
         self.wr = msg.data
-
-    def covarianceInit(self):
-        """
-            @brief  Initializes the Covariance topic type by default  
-        """
-        #   MultiArrayDimension object
-        item = MultiArrayDimension()
-        item.label = "height"
-        item.size = self.matrixH
-        item.stride = self.matrixH * self.matrixW
-        #   Adds multiarray dimensions to Covariance layout
-        self.covariance64.layout.dim.append(item)
-        
-        item.label = "width"
-        item.size = self.matrixW
-        item.stride = self.matrixW
-
-        #   Adds configurations of layout topic to dimension parameter of covariance
-        #self.covariance64.layout.dim.append(item)
-        #self.covariance64.layout.data_offset = 0
-        #   Sets covariance matrix to 0
-        #self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
-        #self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
 
     def calculate_cmdVel(self):
         #   Assigns linear and angular velocity 
@@ -119,8 +87,7 @@ class localization:
 
         
         """
-
-        #   H Matrix with the puzzlebot's kinematic model 
+ 
         #   H Matrix with the puzzlebot's kinematic model 
         Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],[0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],[0.0, 0.0, 1.0]])
         
@@ -150,25 +117,6 @@ class localization:
         self.odometry.pose.covariance[35] = Sigmak[2, 2]
 
 
-        #self.covarianceMatrix[0, 0] = Sigmak[0,0]   # xx
-        #self.covarianceMatrix[1, 0] = Sigmak[1,0]   # yx
-        #self.covarianceMatrix[5, 0] = Sigmak[2,0]   # thetax
-        #self.covarianceMatrix[0, 1] = Sigmak[0,1]   # xy
-        #self.covarianceMatrix[1, 1] = Sigmak[1,1]   # yy
-        #self.covarianceMatrix[5, 1] = Sigmak[2,1]   # thetay
-        #self.covarianceMatrix[0, 5] = Sigmak[0,2]   # xtheta
-        #self.covarianceMatrix[1, 5] = Sigmak[1,2]   # ytheta
-        #self.covarianceMatrix[5, 5] = Sigmak[2,2]   # thetatheta
-        #covMatriz = self.covarianceMatrix.flatten().tolist()[0]
-
-
-        #   Inits Covariance Matrix FLoat64MultiArray message
-        #   Maybe I should make it a return function so its easier to access and
-        #   less variables are here.
-        #self.covariance64.data = self.covarianceMatrix.flatten().tolist()[0]
-
-        
-
     def getOdometry(self):
         """
             @brief Assigns Odometry values to /odom message
@@ -183,8 +131,6 @@ class localization:
         #   Obtain Theta from angular velocity
         self.theta_dot = self.angularZ
         self.theta += self.theta_dot * dt
-        #   Bound to pi
-        self.theta = self.theta % (2*np.pi) 
 
         #   Obtain linear speeds using theta
         self.x_dot = self.linearX * np.cos(self.theta)
@@ -220,68 +166,9 @@ class localization:
         self.odometry.twist.twist.angular.z = self.angularZ
         
         #   Runs the calculations and updates covariance matrix
-        #self.covarianceCalculation(dt)
+        self.covarianceCalculation(dt)
 
 
-                #   H Matrix with the puzzlebot's kinematic model 
-        Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],
-                       [0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],
-                       [0.0, 0.0, 1.0]])
-        #   Sigma calculation for the covariance matrix with covariance constants
-        Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0], [0, self.kl * abs(self.wl)]])
-        #   Gradient Velcity calculation with 3 x 3 covariance matrix
-        GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
-                                                                   [np.sin(self.thetaPast), np.sin(self.thetaPast)],
-                                                                   [2/self.l, -2/self.l]])
-        #   Qk Gaussian Matrix 
-        Qk = GradientOmegak * Sigmadeltak * np.transpose(GradientOmegak)
-        #   Covariance matrix
-        Sigmak = np.dot(np.dot(Hk, self.SigmakPast),np.transpose(Hk)) + Qk
-        #   Sigma result k - 1 update
-        self.SigmakPast = Sigmak
-        
-
-        #   Assigns covariance values to covariance matrix of the Odometry message
-        self.odometry.pose.covariance[0] = Sigmak[0, 0]
-        self.odometry.pose.covariance[1] = Sigmak[0, 1]
-        self.odometry.pose.covariance[5] = Sigmak[0, 2]
-        self.odometry.pose.covariance[6] = Sigmak[1, 0]
-        self.odometry.pose.covariance[7] = Sigmak[1, 1]
-        self.odometry.pose.covariance[11] = Sigmak[1, 2]
-        self.odometry.pose.covariance[30] = Sigmak[2, 0]
-        self.odometry.pose.covariance[31] = Sigmak[2, 1]
-        self.odometry.pose.covariance[35] = Sigmak[2, 2]
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        print(self.odometry.pose.covariance)
-
-        #   Assigns nav_msgs/Odometry message elements
-        #self.odometry.pose = self.covariancePose
-        #self.odometry.twist = self.covarianceTwist
-        #self.odometry.pose.covariance = self.covariance64   #   PoseWithCOvariance
-        #self.odometry.twist.covariance = self.covariance64  #   TwistWithCovariance
 
 
         #   Publish Pose
@@ -291,7 +178,7 @@ class localization:
         self.prevTime = self.currentTime
         #   Update previous position
         self.thetaPast = self.theta
-        print("passed odometry test")
+        #print("passed odometry test")
 
 
 
@@ -301,7 +188,7 @@ if __name__=='__main__':
     try:
         #   Node initialization
         rospy.init_node("localisation_node")
-        rate = rospy.Rate(100)
+        rate = rospy.Rate(10)
         puzz = localization()
         
         
