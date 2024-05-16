@@ -43,8 +43,9 @@ class localization:
         self.covariance64 = Float64MultiArray()
         #   Covariance constats
         #TODO   CALIBRAR LOS PARAMETROS CON MINIMOS CUADRADOS
-        self.kr = 1.5
-        self.kl = 0.2   #
+
+        self.kr = 0.30913602108470944  # 0.01 si jala
+        self.kl = 0.4   # 0.4
         self.SigmakPast = np.matrix([[0, 0, 0], [0,0,0], [0,0,0]])
         self.covarianceMatrix = np.matrix([[0, 0, 0, 0, 0, 0],
                                            [0, 0, 0, 0, 0, 0],
@@ -89,11 +90,11 @@ class localization:
         item.stride = self.matrixW
 
         #   Adds configurations of layout topic to dimension parameter of covariance
-        self.covariance64.layout.dim.append(item)
-        self.covariance64.layout.data_offset = 0
+        #self.covariance64.layout.dim.append(item)
+        #self.covariance64.layout.data_offset = 0
         #   Sets covariance matrix to 0
-        self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
-        self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
+        #self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
+        #self.covariance64.data = [[0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0] ]
 
     def calculate_cmdVel(self):
         #   Assigns linear and angular velocity 
@@ -120,19 +121,20 @@ class localization:
         """
 
         #   H Matrix with the puzzlebot's kinematic model 
-        Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],
-                       [0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],
-                       [0.0, 0.0, 1.0]])
+        #   H Matrix with the puzzlebot's kinematic model 
+        Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],[0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],[0.0, 0.0, 1.0]])
+        
         #   Sigma calculation for the covariance matrix with covariance constants
-        Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0], [0, self.kl * abs(self.wl)]])
+        Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0.0], [0.0, self.kl * abs(self.wl)]])
+        
+        scalarComputing = (0.5) * self.wheel_radius * dt
         #   Gradient Velcity calculation with 3 x 3 covariance matrix
-        GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
-                                                                   [np.sin(self.thetaPast), np.sin(self.thetaPast)],
-                                                                   [2/self.l, -2/self.l]])
+        GradientOmegak = np.multiply(scalarComputing, np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],[np.sin(self.thetaPast), np.sin(self.thetaPast)], [2/self.l, -2/self.l]]))
+        
         #   Qk Gaussian Matrix 
         Qk = GradientOmegak * Sigmadeltak * np.transpose(GradientOmegak)
         #   Covariance matrix
-        Sigmak = np.dot(np.dot(Hk, self.SigmakPast),Hk) + Qk
+        Sigmak = np.dot(np.dot(Hk, self.SigmakPast), np.transpose(Hk)) + Qk
         #   Sigma result k - 1 update
         self.SigmakPast = Sigmak
 
@@ -218,7 +220,62 @@ class localization:
         self.odometry.twist.twist.angular.z = self.angularZ
         
         #   Runs the calculations and updates covariance matrix
-        self.covarianceCalculation(dt)
+        #self.covarianceCalculation(dt)
+
+
+                #   H Matrix with the puzzlebot's kinematic model 
+        Hk = np.matrix([[1.0, 0.0, -dt*self.linearX*np.sin(self.thetaPast)],
+                       [0.0, 1.0, dt*self.linearX*np.cos(self.thetaPast)],
+                       [0.0, 0.0, 1.0]])
+        #   Sigma calculation for the covariance matrix with covariance constants
+        Sigmadeltak = np.matrix([[self.kr * abs(self.wr), 0], [0, self.kl * abs(self.wl)]])
+        #   Gradient Velcity calculation with 3 x 3 covariance matrix
+        GradientOmegak = 1/2 * self.wheel_radius * dt *  np.matrix([[np.cos(self.thetaPast), np.cos(self.thetaPast)],
+                                                                   [np.sin(self.thetaPast), np.sin(self.thetaPast)],
+                                                                   [2/self.l, -2/self.l]])
+        #   Qk Gaussian Matrix 
+        Qk = GradientOmegak * Sigmadeltak * np.transpose(GradientOmegak)
+        #   Covariance matrix
+        Sigmak = np.dot(np.dot(Hk, self.SigmakPast),np.transpose(Hk)) + Qk
+        #   Sigma result k - 1 update
+        self.SigmakPast = Sigmak
+        
+
+        #   Assigns covariance values to covariance matrix of the Odometry message
+        self.odometry.pose.covariance[0] = Sigmak[0, 0]
+        self.odometry.pose.covariance[1] = Sigmak[0, 1]
+        self.odometry.pose.covariance[5] = Sigmak[0, 2]
+        self.odometry.pose.covariance[6] = Sigmak[1, 0]
+        self.odometry.pose.covariance[7] = Sigmak[1, 1]
+        self.odometry.pose.covariance[11] = Sigmak[1, 2]
+        self.odometry.pose.covariance[30] = Sigmak[2, 0]
+        self.odometry.pose.covariance[31] = Sigmak[2, 1]
+        self.odometry.pose.covariance[35] = Sigmak[2, 2]
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        print(self.odometry.pose.covariance)
 
         #   Assigns nav_msgs/Odometry message elements
         #self.odometry.pose = self.covariancePose
