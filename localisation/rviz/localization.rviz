@@ -6,12 +6,9 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /RobotModel1
         - /RobotModel1/Links1
         - /RobotModel1/Links1/wl_link1
         - /RobotModel1/Links1/wr_link1
-        - /Axes1
-        - /Odometry1
         - /Pose1
       Splitter Ratio: 0.5
     Tree Height: 549
@@ -95,13 +92,13 @@ Visualization Manager:
       Visual Enabled: true
     - Alpha: 1
       Class: rviz/Axes
-      Enabled: false
+      Enabled: true
       Length: 0.10000000149011612
       Name: Axes
       Radius: 0.009999999776482582
       Reference Frame: <Fixed Frame>
       Show Trail: false
-      Value: false
+      Value: true
     - Angle Tolerance: 0.10000000149011612
       Class: rviz/Odometry
       Covariance:
@@ -181,7 +178,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 15.183624267578125
+      Distance: 5.915424346923828
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -197,9 +194,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7953972220420837
+      Pitch: 1.0603965520858765
       Target Frame: <Fixed Frame>
-      Yaw: 5.328568458557129
+      Yaw: 2.128551483154297
     Saved: ~
 Window Geometry:
   Displays:
@@ -217,5 +214,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 94
-  Y: 27
+  X: 109
+  Y: 56
