@@ -6,10 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /RobotModel1/Links1
         - /RobotModel1/Links1/wl_link1
         - /RobotModel1/Links1/wr_link1
-        - /Pose1
+        - /Axes1
+        - /Odometry1
       Splitter Ratio: 0.5
     Tree Height: 549
   - Class: rviz/Selection
@@ -96,7 +96,7 @@ Visualization Manager:
       Length: 0.10000000149011612
       Name: Axes
       Radius: 0.009999999776482582
-      Reference Frame: <Fixed Frame>
+      Reference Frame: world
       Show Trail: false
       Value: true
     - Angle Tolerance: 0.10000000149011612
@@ -131,7 +131,7 @@ Visualization Manager:
         Shaft Length: 1
         Shaft Radius: 0.05000000074505806
         Value: Arrow
-      Topic: /odom
+      Topic: /puzzlebot_1/base_pose_ground_truth
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -154,7 +154,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: odom
+    Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:
@@ -178,7 +178,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.915424346923828
+      Distance: 5.540987014770508
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -186,17 +186,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 0.37372398376464844
+        Y: 3.1890697479248047
+        Z: 2.1175661087036133
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0603965520858765
+      Pitch: 0.8053966760635376
       Target Frame: <Fixed Frame>
-      Yaw: 2.128551483154297
+      Yaw: 3.018558979034424
     Saved: ~
 Window Geometry:
   Displays:
@@ -214,5 +214,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 109
-  Y: 56
+  X: 285
+  Y: 267

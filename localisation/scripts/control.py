@@ -38,11 +38,12 @@ if __name__ == '__main__':
     # Create a publisher for the /cmd_vel topic
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
-    goal = rospy.Publisher("/goal",PoseStamped,queue_size=10)
-    dx = rospy.Publisher("/desired_x",Float32,queue_size=10)
-    dy = rospy.Publisher("/desired_y",Float32,queue_size=10)
-    dz = rospy.Publisher("/desired_z",Float32,queue_size=10)
-    dw = rospy.Publisher("/desired_w",Float32,queue_size=10)
+    goal = rospy.Subscriber("/goal",PoseStamped,cb)
+    
+    # dx = rospy.Publisher("/desired_x",Float32,queue_size=10)
+    # dy = rospy.Publisher("/desired_y",Float32,queue_size=10)
+    # dz = rospy.Publisher("/desired_z",Float32,queue_size=10)
+    # dw = rospy.Publisher("/desired_w",Float32,queue_size=10)
 
     goal_msg = PoseStamped()
     goal_msg.header.frame_id = "odom"
@@ -53,52 +54,51 @@ if __name__ == '__main__':
     theta_set = False
     try:
         while not rospy.is_shutdown():
-            for x,y in trajectories[trajectory]:
-                print("Moving to: ", x, y)
-                goal_msg.pose.position.x = x
-                goal_msg.pose.position.y = y
-                print("Current position: ", odom.pose.pose.position.x, odom.pose.pose.position.y)   
-                theta = wrapToPi(tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w])[2] )
-                print("Current theta: ", theta)
-                print("Desired theta ", math.atan2(y,x) - theta)
+            print("Moving to: ", x, y)
+            goal_msg.pose.position.x = x
+            goal_msg.pose.position.y = y
+            print("Current position: ", odom.pose.pose.position.x, odom.pose.pose.position.y)   
+            theta = wrapToPi(tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w])[2] )
+            print("Current theta: ", theta)
+            print("Desired theta ", math.atan2(y,x) - theta)
+            pos = odom.pose.pose.position
+            print("Error theta: ", wrapToPi(math.atan2(y - pos.y, x - pos.x) - theta))
+            quat = tf.transformations.quaternion_from_euler(0, 0, math.atan2(y - pos.y, x - pos.x))
+
+            while(True):
                 pos = odom.pose.pose.position
-                print("Error theta: ", wrapToPi(math.atan2(y - pos.y, x - pos.x) - theta))
-                quat = tf.transformations.quaternion_from_euler(0, 0, math.atan2(y - pos.y, x - pos.x))
+                theta = wrapToPi(tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w])[2])  
+                if (pos.x - x)**2 + (pos.y - y)**2 < 0.001:
+                    break
+                cmd_vel = Twist()
+                errorx = x - pos.x
+                errory = y - pos.y
 
-                while(True):
-                    pos = odom.pose.pose.position
-                    theta = wrapToPi(tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w])[2])  
-                    if (pos.x - x)**2 + (pos.y - y)**2 < 0.001:
-                        break
-                    cmd_vel = Twist()
-                    errorx = x - pos.x
-                    errory = y - pos.y
+                if theta_set == False:
+                    errorTheta = abs(math.atan2(errory,errorx) - theta)
+                    if abs(errorTheta) < 0.01:
+                        theta_set = True
+                    cmd_vel.angular.z = KTheta * errorTheta
+                else:
+                    errorDistance = math.sqrt(errorx**2 + errory**2)
+                    cmd_vel.linear.x = KDistance * errorDistance
 
-                    if theta_set == False:
-                        errorTheta = abs(math.atan2(errory,errorx) - theta)
-                        if abs(errorTheta) < 0.01:
-                            theta_set = True
-                        cmd_vel.angular.z = KTheta * errorTheta
-                    else:
-                        errorDistance = math.sqrt(errorx**2 + errory**2)
-                        cmd_vel.linear.x = KDistance * errorDistance
-
-                    # errorTheta = abs(math.atan2(errory,errorx) - theta)
-                    # cmd_vel.angular.z = Kp * 2 * errorTheta    
-                    # errorDistance = math.sqrt(errorx**2 + errory**2)
-                    # cmd_vel.linear.x = Kp * errorDistance
-                    
-                    cmd_vel_pub.publish(cmd_vel)
-                    goal.publish(goal_msg)
-                    dx.publish(quat[0])
-                    dy.publish(quat[1]) 
-                    dz.publish(quat[2])
-                    dw.publish(quat[3])
-                    rate.sleep()
-                theta_set = False
+                # errorTheta = abs(math.atan2(errory,errorx) - theta)
+                # cmd_vel.angular.z = Kp * 2 * errorTheta    
+                # errorDistance = math.sqrt(errorx**2 + errory**2)
+                # cmd_vel.linear.x = Kp * errorDistance
+                
+                cmd_vel_pub.publish(cmd_vel)
+                goal.publish(goal_msg)
+                dx.publish(quat[0])
+                dy.publish(quat[1]) 
+                dz.publish(quat[2])
+                dw.publish(quat[3])
                 rate.sleep()
-            print("Trajectory completed")
+            theta_set = False
             rate.sleep()
+        print("Trajectory completed")
+        rate.sleep()
     except KeyboardInterrupt:
         rospy.loginfo("Ctrl-C caught. Exiting...")
         rospy.signal_shutdown("Ctrl-C caught")

@@ -4,23 +4,24 @@ from std_msgs.msg import Float32
 from nav_msgs.msg import Odometry
 import tf
 
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 l = 0.19
 r = 0.05
-x = 0.0
-y = 0.0
-theta = 0.0
+#starting position
+x = 2.0
+y = 2.0
+theta = -1.57
 wl = 0.0
 wr = 0.0
 def wr_cb(msg):
     global wr
     wr = msg.data
-    rospy.loginfo("Right wheel velocity: %f", msg.data)
+    # rospy.loginfo("Right wheel velocity: %f", msg.data)
 def wl_cb(msg):
     global wl
     wl = msg.data
-    rospy.loginfo("Left wheel velocity: %f", msg.data)
+    # rospy.loginfo("Left wheel velocity: %f", msg.data)
 
 def odometry_pub(wl, wr, dt):
     global x, y, theta
@@ -33,8 +34,6 @@ def odometry_pub(wl, wr, dt):
     angular_vel = r*(right_wheel_vel - left_wheel_vel) / 0.19
     
     theta += angular_vel*dt
-    theta = theta % (2*math.pi) # Normalize angle
-
     linear_vel_x = linear_vel * math.cos(theta) 
     linear_vel_y = linear_vel * math.sin(theta)
 
@@ -44,8 +43,8 @@ def odometry_pub(wl, wr, dt):
     # Create odometry message
     odom_msg = Odometry()
     odom_msg.header.stamp = rospy.Time.now()
-    odom_msg.header.frame_id = 'odom'
-    odom_msg.child_frame_id = 'base_link'
+    odom_msg.header.frame_id = 'world'
+    odom_msg.child_frame_id = '/base_link'
 
     odom_msg.pose.pose.position.x = x
     odom_msg.pose.pose.position.y = y
@@ -66,13 +65,13 @@ if __name__ == '__main__':
     rospy.init_node('localisation_node')
 
     # Subscribe to wheel velocity topics
-    rospy.Subscriber('wl', Float32, wl_cb)
-    rospy.Subscriber('wr', Float32, wr_cb)
+    rospy.Subscriber('/puzzlebot_1/wl', Float32, wl_cb)
+    rospy.Subscriber('/puzzlebot_1/wr', Float32, wr_cb)
 
     # Create odometry publisher
-    odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)
+    odom_pub = rospy.Publisher('/odom', Odometry, queue_size=10)
 
-    rate = rospy.Rate(100) # 100 Hz
+    rate = rospy.Rate(25) # 100 Hz
     prev_time = rospy.Time.now().to_sec()
 
     while not rospy.is_shutdown():

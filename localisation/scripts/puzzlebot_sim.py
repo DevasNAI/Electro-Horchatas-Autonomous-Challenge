@@ -41,7 +41,6 @@ def main():
         dt = currentTime - prev_time
         prev_time = currentTime
         theta += vel.angular.z*dt
-        theta = theta % (2*math.pi)
 
         pose.header.stamp = rospy.Time.now()
         pose.pose.position.x += vel.linear.x*dt*math.cos(theta)

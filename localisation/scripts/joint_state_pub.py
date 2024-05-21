@@ -26,11 +26,11 @@ if __name__ == '__main__':
     joint_state_pub = rospy.Publisher('joint_states', JointState, queue_size=1)
 
     # Subscribe to the odom topic
-    rospy.Subscriber('odom', Odometry, odom_callback)
+    rospy.Subscriber('/puzzlebot_1/base_pose_ground_truth', Odometry, odom_callback)
 
     tf_broadcaster = tf2_ros.TransformBroadcaster()
 
-    rate = rospy.Rate(100) # 100 Hz
+    rate = rospy.Rate(25) # 100 Hz
 
     prev_time = rospy.Time.now().to_sec()
 
@@ -38,8 +38,8 @@ if __name__ == '__main__':
         # Extract position and orientation from odometry message
         odom_trans = TransformStamped()
         odom_trans.header.stamp = rospy.Time.now()
-        odom_trans.header.frame_id = "odom"
-        odom_trans.child_frame_id = "base_link"
+        odom_trans.header.frame_id = "world"
+        odom_trans.child_frame_id = "/base_link"
         odom_trans.transform.translation = odom.pose.pose.position
         # print(odom.pose.pose.position)
         odom_trans.transform.rotation = odom.pose.pose.orientation
