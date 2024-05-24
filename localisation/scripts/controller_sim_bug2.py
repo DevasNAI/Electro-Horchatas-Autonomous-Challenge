@@ -127,7 +127,7 @@ def follow_wall():
     distance_to_line = math.sqrt((closestGoalLine_x - current_pose.pose.position.x)**2 + (closestGoalLine_y - current_pose.pose.position.y)**2)
 
     # Check if the robot is close to the goal line and has moved a certain distance
-    if distance_to_line < 0.1 and distance_moved > 0.5:
+    if distance_to_line < 0.15 and distance_moved > 0.5:
         # Calculate the distance to the goal
         distance_to_goal = math.sqrt((goal.pose.position.x - current_pose.pose.position.x)**2 + (goal.pose.position.y - current_pose.pose.position.y)**2)
         # Calculate the distance to the hitpoint
@@ -148,7 +148,7 @@ def follow_wall():
     # Adjust the robot's orientation to keep following the wall
     elif np.any((frontL_distance >= 0.2)):
             cmd_vel.linear.x = 0.1
-            cmd_vel.angular.z = 0.5
+            cmd_vel.angular.z = 0.7
     else:
         # Move the robot forward
         cmd_vel.linear.x = 0.5

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Map File -->
+  <arg name="map_file" default="/home/jorge/.ros/mapa2.yaml"/>
+	
+  <!-- Map Server -->
+  <!-- Publish: /map, /map_metadata -->
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" />
+	
+  <!-- Add AMCL example for differential drive robots for Localization -->
+  <!-- Subscribe: /scan, /tf, /initialpose, /map -->
+  <!-- Publish: /amcl_pose, /particlecloud, /tf -->
+  <!-- <include file="$(find amcl)/examples/amcl_diff.launch"/> -->
+	
+  <!-- Move Base Node -->
+  <!-- Subscribe: /move_base_simple/goal -->
+  <!-- Publish: /cmd_vel -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find localisation)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find localisation)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find localisation)/param/local_costmap_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find localisation)/param/global_costmap_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find localisation)/param/base_local_planner_params.yaml" command="load" />
+    <remap from="cmd_vel" to="/puzzlebot_1/base_controller/cmd_vel" />
+  </node>
+</launch>

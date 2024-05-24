@@ -43,7 +43,7 @@ def odometry_pub(wl, wr, dt):
     # Create odometry message
     odom_msg = Odometry()
     odom_msg.header.stamp = rospy.Time.now()
-    odom_msg.header.frame_id = 'world'
+    odom_msg.header.frame_id = 'odom'
     odom_msg.child_frame_id = '/base_link'
 
     odom_msg.pose.pose.position.x = x
