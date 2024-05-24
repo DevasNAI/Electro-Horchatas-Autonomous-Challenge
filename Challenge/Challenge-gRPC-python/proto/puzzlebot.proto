@@ -1,0 +1,26 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+package RPCDemoPkg;
+
+message Odometry {
+	//	Como se que vienen juntos, el packedtrue dice que vienen juntos
+	repeated double values = 1 [packed=true];
+}
+
+service PuzzlebotOdometry {
+	rpc GetOdometry (google.protobuf.Empty) returns (Odometry){
+
+	};
+}
+
+message odometryM {
+    double poseX = 1;
+    double poseY = 2;
+    double poseZ = 3;
+	double orientationX = 4;
+    double orientationY = 5;
+    double orientationZ = 6;
+    double orientationW = 7;
+    double LinXSpeed = 8;
+    double AngThetaSpeed = 9;
+}

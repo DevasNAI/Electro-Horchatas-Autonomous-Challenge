@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+        <node pkg="odom_flask" type="localisation.py" name="localisation_node" output="screen"/>
+        <node pkg="odom_flask" type="puzzlebot_sim.py" name="puzzelbot_kinematic_node" output="screen"/>
+
+
+</launch>

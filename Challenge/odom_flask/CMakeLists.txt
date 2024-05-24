@@ -10,6 +10,8 @@ project(odom_flask)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
+  sensor_msgs
+  tf_conversions
   rospy
   std_msgs
 )
@@ -69,9 +71,9 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
+#generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   std_msgs
+#   geometry_msgs   nav_msgs   std_msgs sensor_msgs
 # )
 
 ################################################
@@ -106,7 +108,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES odom_flask
-#  CATKIN_DEPENDS geometry_msgs nav_msgs rospy std_msgs
+  CATKIN_DEPENDS geometry_msgs nav_msgs rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -161,7 +163,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-   scripts/odom_flask.py
+   scripts/odom_flask.py scripts/localisation.py scripts/puzzlebot_sim.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
