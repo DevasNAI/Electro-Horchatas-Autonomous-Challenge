@@ -52,13 +52,20 @@ if __name__ == '__main__':
     t = threading.Thread(target=schedule_api_call)
     t.start()
 
+    @app.route('/api/result')
+    def get_result():
+        odom2json = {"poseX": result.poseX, "poseY": result.poseY, "poseZ": result.poseZ, "orientationX": result.orientationX, "orientationY": result.orientationY, "orientationZ": result.orientationZ, "orientationW": result.orientationW, "LinXSpeed": result.LinXSpeed, "AngThetaSpeed": result.AngThetaSpeed }
+        odomJson = json.dump(odom2json)
+        return str(odomJson)
+    
+    
+    @app.route('/')
+    def show_result():
+        return render_template('result.html')
     
 
+    app.run(debug=True, port=8002)
 
-print(response)
-img = cv2.imread(response)
-cv2.imshow('img', img)
-cv2.waitKey(1)
 
 
 
