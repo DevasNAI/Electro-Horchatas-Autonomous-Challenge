@@ -28,7 +28,7 @@ class puzzlebotOdom(puzzlebot_pb2_grpc.PuzzlebotOdometryServicer):
         self.br = CvBridge()
         self.dataDict = {"x": 0.0, "y": 0.0, "z": 0.0, "xq": 0.0, "yq": 0.0, "zq": 0.0, "w": 0.0, "linX_Vel": 0.0, "angTheta_Vel": 0.0}
         rospy.Subscriber("/odom", Odometry, self.UpdateData)
-        rospy.Subscriber("/image_topic", Image, self.UpdateData)
+        rospy.Subscriber("/image_topic", Image, self.UpdateImage)
         print("Initialized gRPC Server")
         
     def UpdateData(self, data):
@@ -56,7 +56,7 @@ class puzzlebotOdom(puzzlebot_pb2_grpc.PuzzlebotOdometryServicer):
         #results.orientationW = self.dataDict["w"]
         return results
     
-    def GetImageResult(self, request, context):
+    def GetImage(self, request, context):
         #   Sends through grpc
         results = puzzlebot_pb2.ImageFloat()
         results.b64img = self.img_compressed
