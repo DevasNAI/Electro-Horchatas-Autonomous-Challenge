@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+    <launch>
+
+        <!--Puzzlebot Parameters-->
+        <arg name="robot_name" default="puzzlebot_1"/>
+        <arg name="robot_description_file" default="puzzlebot_jetson_ed_v1.xacro"/>
+        <arg name="pos_x" default="0.0"/>
+        <arg name="pos_y" default="0.0"/>
+        <arg name="pos_theta" default="0.0"/>
+
+        <!-- Gazebo Parameters -->
+        <arg name="world_name" default="puzzlebot_aruco_markers.world"/>
+
+        <group ns="$(arg robot_name)">
+
+            <!-- Launch Puzzlebot -->
+            <include file="$(find puzzlebot_gazebo)/launch/puzzlebot_spawner_v2.launch">
+                <arg name="robot_name" value="$(arg robot_name)"/>
+                <arg name="robot_description_file" value="$(arg robot_description_file)"/>
+                <arg name="x" value="$(arg pos_x)"/>
+                <arg name="y" value="$(arg pos_y)"/>
+                <arg name="yaw" value="$(arg pos_theta)"/>
+            </include>
+
+        </group>
+
+
+        <!-- Launch Gazebo -->
+        <include file="$(find puzzlebot_gazebo)/launch/gazebo_world.launch">
+            <arg name="world_name" value="$(find puzzlebot_gazebo)/worlds/$(arg world_name)"/>
+        </include>
+
+    </launch>
