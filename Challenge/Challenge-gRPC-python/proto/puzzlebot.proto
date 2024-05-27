@@ -2,18 +2,26 @@ syntax = "proto3";
 import "google/protobuf/empty.proto";
 package RPCDemoPkg;
 
-message Odometry {
+message ImageFloat {
 	//	Como se que vienen juntos, el packedtrue dice que vienen juntos
-	repeated double values = 1 [packed=true];
+	bytes b64img = 1;
+    uint32 width = 2;
+    uint32 height = 3;
 }
 
 service PuzzlebotOdometry {
 	rpc GetOdometry (google.protobuf.Empty) returns (Odometry){
 
 	};
+
+    rpc GetImage (google.protobuf.Empty) returns (ImageFloat){
+
+    };
 }
 
-message odometryM {
+
+
+message Odometry {
     double poseX = 1;
     double poseY = 2;
     double poseZ = 3;

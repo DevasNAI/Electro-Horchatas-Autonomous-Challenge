@@ -31,45 +31,38 @@ class puzzlebotOdom(puzzlebot_pb2_grpc.PuzzlebotOdometryServicer):
         self.odom = data
         self.dataDict["x"] = self.odom.pose.pose.position.x
         self.dataDict["y"] = self.odom.pose.pose.position.y
-        self.dataDict["z"] = self.odom.pose.pose.position.z
-        self.dataDict["xq"] = self.odom.pose.pose.orientation.x
-        self.dataDict["yq"] = self.odom.pose.pose.orientation.y
-        self.dataDict["zq"] = self.odom.pose.pose.orientation.z
-        self.dataDict["w"] = self.odom.pose.pose.orientation.w
-        self.dataDict["linX_Vel"] = self.odom.twist.twist.linear.x
-        self.dataDict["angTheta_Vel"] = self.odom.twist.twist.angular.z
+        self.dataDict["z"] = self.odom.pose.pose.orientation.z
+        #self.dataDict["zq"] = self.odom.pose.pose.orientation.z #aqui mandar yaw
+        #self.dataDict["w"] = self.odom.pose.pose.orientation.w
         #print(rospy.get_caller_id() + " / Got data: " + str(self.data))
     
-    #def GetOdometry(self, request, context):
-    #    print("Got call: " + context.peer())
-    #    results = puzzlebot_pb2.Odometry()
-    #    results.values.append(self.dataDict["x"])
-    #    results.values.append(self.dataDict["y"])
-    #    results.values.append(self.dataDict["z"])
-    #    results.values.append(self.dataDict["xq"])
-    #    results.values.append(self.dataDict["yq"])
-    #    results.values.append(self.dataDict["zq"])
-    #    results.values.append(self.dataDict["w"])
-    #    results.values.append(self.dataDict["linX_Vel"])
-    #    results.values.append(self.dataDict["angTheta_Vel"])
-    #    return results
     def GetOdometry(self, request, context):
         print("Got call 2: " + context.peer())
-        results = puzzlebot_pb2.odometryM()
+        results = puzzlebot_pb2.Odometry()
         results.poseX = self.dataDict["x"]
         results.poseY = self.dataDict["y"]
         results.poseZ = self.dataDict["z"]
-        results.orientationX = self.dataDict["xq"]
-        results.orientationY = self.dataDict["yq"]
-        results.orientationZ = self.dataDict["zq"]
-        results.orientationW = self.dataDict["w"]
-        results.LinXSpeed = self.dataDict["linX_Vel"]
-        results.AngThetaSpeed = self.dataDict["angTheta_Vel"]
+        #results.orientationW = self.dataDict["w"]
+        return results
+    
+    def GetImageResult(self, request, context):
+        #   Reads Map format
+        img = cv2.imread("PistaMap.pgm", cv2.IMREAD_COLOR)
+        height, width = img.shape[:2]
+        centerX, centerY = (width // 2, height // 2)
+        M = cv2.getRotationMatrix2D((centerX, centerY), 10, 1.0)
+        #   Rotates (if  map is turned over)
+        rotated = cv2.warpAffine(img, M, (width, height))
+        img = cv2.resize(rotated, (640, 480))
+        #   Compresses image to send
+        self.img_compressed = np.array(cv2.imencode('.jpg', img)[1]).tobytes()
+        #   Sends through grpc
+        results = puzzlebot_pb2.ImageFloat()
+        results.b64img = img
+        results.width = width
+        results.height = height
         return results
         
-
-    
-
 
 terminate = threading.Event()
 def terminate_server(signum, frame):
