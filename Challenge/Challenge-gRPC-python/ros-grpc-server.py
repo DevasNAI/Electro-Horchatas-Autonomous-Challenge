@@ -3,6 +3,7 @@ import signal
 import cv2
 import numpy as np
 import base64
+from cv_bridge import CvBridge
 import threading
 from concurrent import futures
 
@@ -10,6 +11,7 @@ import rospy
 import grpc
 from std_msgs.msg import Float64MultiArray
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Image   
 
 import puzzlebot_pb2
 import puzzlebot_pb2_grpc
@@ -23,8 +25,10 @@ grpc_object_position = [0, 0 ,0]
 class puzzlebotOdom(puzzlebot_pb2_grpc.PuzzlebotOdometryServicer):
     def __init__(self):
         self.odom = Odometry()
+        self.br = CvBridge()
         self.dataDict = {"x": 0.0, "y": 0.0, "z": 0.0, "xq": 0.0, "yq": 0.0, "zq": 0.0, "w": 0.0, "linX_Vel": 0.0, "angTheta_Vel": 0.0}
         rospy.Subscriber("/odom", Odometry, self.UpdateData)
+        rospy.Subscriber("/image_topic", Image, self.UpdateData)
         print("Initialized gRPC Server")
         
     def UpdateData(self, data):
@@ -36,6 +40,13 @@ class puzzlebotOdom(puzzlebot_pb2_grpc.PuzzlebotOdometryServicer):
         #self.dataDict["w"] = self.odom.pose.pose.orientation.w
         #print(rospy.get_caller_id() + " / Got data: " + str(self.data))
     
+    def UpdateImage(self, data):
+        image = self.br.imgmsg_to_cv2(data, "bgr8")
+        #bridge.imgmsg_to_cv2(image_message, desired_encoding='passthrough')
+       # print(self.image[0])
+        self.shape = image.shape
+        self.img_compressed = np.array(cv2.imencode('.jpg', image)[1]).tobytes()
+
     def GetOdometry(self, request, context):
         print("Got call 2: " + context.peer())
         results = puzzlebot_pb2.Odometry()
@@ -46,21 +57,11 @@ class puzzlebotOdom(puzzlebot_pb2_grpc.PuzzlebotOdometryServicer):
         return results
     
     def GetImageResult(self, request, context):
-        #   Reads Map format
-        img = cv2.imread("PistaMap.pgm", cv2.IMREAD_COLOR)
-        height, width = img.shape[:2]
-        centerX, centerY = (width // 2, height // 2)
-        M = cv2.getRotationMatrix2D((centerX, centerY), 10, 1.0)
-        #   Rotates (if  map is turned over)
-        rotated = cv2.warpAffine(img, M, (width, height))
-        img = cv2.resize(rotated, (640, 480))
-        #   Compresses image to send
-        self.img_compressed = np.array(cv2.imencode('.jpg', img)[1]).tobytes()
         #   Sends through grpc
         results = puzzlebot_pb2.ImageFloat()
-        results.b64img = img
-        results.width = width
-        results.height = height
+        results.b64img = self.img_compressed
+        results.width = self.shape[1]
+        results.height = self.shape[0]
         return results
         
 
