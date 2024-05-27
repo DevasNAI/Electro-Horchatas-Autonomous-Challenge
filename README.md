@@ -11,11 +11,16 @@
 #####
 ## Mini Challenges Status:
 ### - Week 1: Already done.
+#### This Mini Challenge consist of creating a PID controller for a pendulum.
 ### - Week 2: Already done.
+#### This Mini Challenge consist of creating the urdf, simulation and odometry of the puzzlebot.
 ### - Week 3: No challenge.
 ### - Week 4: Already done on "andysCorner" branch.
+#### This Mini Challenge consist in the implementation of the covariance matrix.
 ### - Week 5: Already done.
+#### This Mini Challenge consist of creating the Bug0 and Bug2 navigation nodes.
 ### - Week 6: Already done.
+#### This Mini Challenge consist of detecting and pose estimating the arucos.
 ### - Week 7: Work in progress.
 ### - Week 8:
 
