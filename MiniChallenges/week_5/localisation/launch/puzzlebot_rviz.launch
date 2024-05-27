@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+        <!-- Run transformations-->
+        <node pkg="tf2_ros" type="static_transform_publisher" name="map_joint" args="odomPose_x  odomPose_y  odomPose_z  odomPose_roll  odomPose_pitch  odomPose_yaw   map   odom"/>
+        <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0 0 0 0 0 0 base_link laser 100"/>
+
+        <!-- Charge the puzzlebot model-->
+        <arg name="puzzlebot_sim_model" default="$(find localisation)/urdf/puzzlebot_jetson_ed_urdf.urdf"/>
+        <param name="robot_description" command="cat $(arg puzzlebot_sim_model)" />
+
+        <!-- Important Codes-->
+        <node pkg="localisation" type="puzzlebot_sim.py" name="simulator" />
+        <node pkg="localisation" type="localisation.py" name="localisation_node" />
+        <node pkg="localisation" type="joint_state_pub.py" name="joint_publisher_node" />
+        <node pkg="localisation" type="controller_sim.py" name="controller_node" output="screen"/>
+
+        <!-- Robot State Publisher -->
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="simulated_state_publisher" />
+
+        <!-- Rviz Configuration -->
+        <arg name="rvizconfig" default="$(find localisation)/rviz/localization.rviz" /> 
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" /> 
+
+        <!-- Gazebo world -->
+        <include file="$(find puzzlebot_gazebo)/launch/puzzlebot_gazebo.launch" />
+</launch>
