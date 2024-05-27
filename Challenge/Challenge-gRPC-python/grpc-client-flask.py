@@ -45,7 +45,7 @@ def call_image_api():
     url = 'http://127.0.0.1:8042/puzzlebotMap/map'
     data = {}
     headers = {'Content-type': 'application/json'}
-    image_g = puzzlebot_pb2.Odometry()
+    image_g = puzzlebot_pb2.ImageFloat()
     result_img = stub.GetImage(image_g)
     
 
@@ -58,7 +58,9 @@ def schedule_api_call():
 
 if __name__ == '__main__':
     call_api()
+    call_image_api()
     schedule.every(0.5).seconds.do(call_api)
+    schedule.every(0.5).seconds.do(call_image_api)
 
     t = threading.Thread(target=schedule_api_call)
     t.start()
