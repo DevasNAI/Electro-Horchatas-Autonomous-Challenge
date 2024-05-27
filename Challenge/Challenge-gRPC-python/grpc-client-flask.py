@@ -1,4 +1,3 @@
-#   A01245418 Andrés Sarellano Acevedo
 #   Crea un wrapper de grpc que lea alguna imagen publicada por un nodo de ROS, esa imagen se la va a servir a un cliente de GRPC, el cliente de GRPC debe desplegar en la pantalla
 import signal
 import cv2
@@ -13,6 +12,7 @@ import json
 import schedule
 import time
 
+import base64
 
 import grpc
 import puzzlebot_pb2
@@ -47,6 +47,19 @@ def call_image_api():
     headers = {'Content-type': 'application/json'}
     image_g = puzzlebot_pb2.ImageFloat()
     result_img = stub.GetImage(image_g)
+
+    image = np.asarray(bytearray(result_img.b64img), dtype="uint8")
+    imagen = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    
+    buffer = cv2.imencode('.jpg', imagen)[1]
+    bas64 = base64.b64encode(buffer)
+    # basenc = bas64.decode()
+    # rere = {"b64img": basenc}
+    result_img = bas64
+    # result_img = json.dumps(rere)
+    print(type(result_img))
+   # with open("result_img.json", "w") as f:
+    #    json.dump(result_img, f)
     
 
 
@@ -68,23 +81,27 @@ if __name__ == '__main__':
     @app.route('/api/result')
     def get_result():
         odom2json = {"poseX": result.poseX, "poseY": result.poseY, "poseZ": result.poseZ, "orientationX": result.orientationX, "orientationY": result.orientationY, "orientationZ": result.orientationZ, "orientationW": result.orientationW, "LinXSpeed": result.LinXSpeed, "AngThetaSpeed": result.AngThetaSpeed }
-        odomJson = json.dump(odom2json)
+        odomJson = json.dumps(odom2json)
         return str(odomJson)
     
     @app.route('/api/image')
     def get_image():
         #   b64 received image
-        image = np.asarray(bytearray(result_img.b64img), dtype="uint8")
+        #image = np.asarray(bytearray(result_img.b64img), dtype="uint8")
+        #print(result_img.b64img)
+      #  newIM = result_img.decode('utf-8')
+        #newIM = str(result_img.b64img)
+        #print(type(newIM))
         #   Decoded image
-        imagen = cv2.imdecode(image, cv2.IMREAD_COLOR)
-        imgjson = {"b64img":result.b64img}
-        img2json = json.dump(imgjson)
+        #imagen = cv2.imdecode(image, cv2.IMREAD_COLOR)
+        #imgjson = {"b64img": newIM}
+        #img2json = json.dumps(imgjson)
         #   Generates an image and reads that image
-        cv2.imwrite("result.png", imagen)  
-        imgpng = cv2.imread("result.png")
+        #cv2.imwrite("result.png", imagen)  
+        #imgpng = cv2.imread("result.png")
 
-
-        return "data:image/png;base64,"+ img2json["b64img"].replace('"', '')
+        #print(result_img)
+        return  "data:image/jpg;base64," + str(result_img).replace("b'", "").replace("'", "")
     
     #@app.route('/api/image')
     #def get_image():
@@ -97,7 +114,7 @@ if __name__ == '__main__':
     
     @app.route('/')
     def show_result():
-        return render_template('result.html')
+        return render_template('index.html')
     
 
     app.run(debug=True, port=8002)
@@ -109,5 +126,4 @@ if __name__ == '__main__':
 #    python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. wrapper-image.proto
 #   python -m grpc_tools.protoc
 #   Define object 
-
 
