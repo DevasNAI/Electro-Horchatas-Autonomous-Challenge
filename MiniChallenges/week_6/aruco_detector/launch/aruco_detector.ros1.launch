@@ -1,0 +1,7 @@
+<launch>
+
+	<node name="jetson_camera_publisher" pkg="aruco_detector" type="opencv_image.py" output="screen" />
+    <node name="camera_info_publisher" pkg="aruco_detector" type="camera_info.py" output="screen" />
+    <node name="aruco_detector" pkg="aruco_detector" type="aruco_detecter.py" output="screen" />
+
+</launch>
