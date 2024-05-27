@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!--Robot 1 Description-->
+    <arg name="robot_name"  default="puzzlebot_1"/>
+
+    <!--Robot(puzzlebot) Parameters-->
+    <arg name="wheelBase" default="0.19"/>
+    <arg name="wheelRadius"  default="0.05"/>
+
+    <!--Simulation Parameters-->
+    <arg name="sampleTime" default="0.02"/>
+    <arg name="nodeRate"  default="100"/>
+    
+
+    <!--Initialise kinematic_model -->
+    <node pkg="localisation" type="joint_state_pub.py" name="puzzlebot_joint_state_publisher" output="screen">
+        <param name="nodeRate" value="$(arg nodeRate)"/>
+        <param name="sampleTime" value="$(arg sampleTime)"/>
+        <param name="wheelBase" value="$(arg wheelBase)"/>
+        <param name="wheelRadius" value="$(arg wheelRadius)"/>       
+    </node>
+
+</launch>
