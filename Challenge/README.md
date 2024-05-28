@@ -3,14 +3,20 @@
 This Challenge includes interfacing between a computer and a Puzzlebot Robot using gRPC, through a FLASK API, whose data is displayed on a Webpage.
 
 #  Data Flow Diagram (DFD)
-Here we can observe the DFD of the system we used
+The Interface Challenge solution we have provided has four principal sections, the puzzlebot ROS nodes, the gRPC server and ROS wrapper, the gRPC client and FLASK server, and the webpage. 
+The puzzlebot has two nodes that are running simultanously, _image_sender_ and _localisation_. The _image_sender_ node reads an .pgm file which is the map of the track where we were making our tests; such node publishes an Image topic called _/image_, from the sensor_msgs package using CV Bridge. The localisation node subscribes to the _wl_ and _wr_ topics and creates the odometry of the Puzzlebot Robot, which is published as an Odometry message from the nav_msgs package as the _/odom_ topic. 
+
+We configured the ROS Master URI to be inside the puzzlebot, while our local PC is configured to be connected to the Puzzlebot's ROS Master, in such a way that we can receive the topics from the puzzlebot in our computer. 
+
+The _ros_wrapper_grpc_ node receives the _/image_ and _/odom_ topics from the Puzzlebot and converts them into gRPC datatypes shown on Table 1 and Table 2. The message Odometry includes only the x, y, z, x (quaternion), y (quaternion), z (quaternion), w (quaternion), robot's linear velocity and robot's angular velocity components of the ROS _/odom_ message. The gRPC image message takes the image from the puzzlebot through CV Bridge and compresses it to base64 and to bytes, being saved on the first element of the ImageFloat datatype.
+
+The gRPC server sends both messages into the pipeline and are received by the gRPC client which creates a FLASK API that is used by the webpage that shows the real time movement of the Puzzlebot around the map.
 
 <p align="center">
-<img src="https://https://github.com/DevasNAI/Electro-Horchatas-Autonomous-Challenge/Images/DFD.png" width="50%" height="50%" title= "Data Flow Diagram" alt="DFD">
+<img src="https://github.com/DevasNAI/Electro-Horchatas-Autonomous-Challenge/blob/andysCorner/Images/DFD.png" width="50%" height="50%" title= "Data Flow Diagram" alt="DFD">
 </p>
 
-[localisation ROS Node] -> (/odom) -> [ROS-gRPC Wrapper] -> (odometryM) -> [gRPC-Client-FLASK] -> WebPage
-
+###### Figure 1. Data Flow Diagram.
 ## Odometry
 
 | Type of Message | Odometry|
@@ -26,7 +32,7 @@ Here we can observe the DFD of the system we used
 | Double | AngThetaSpeed |
 | Float32 | orientationW |
 
-## Mapping stack
+## ImageFloat
 | Type of Message | Map |
 | ------------- | ------------- |
 | byte | b64img |
