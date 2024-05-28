@@ -5,6 +5,10 @@ This Challenge includes interfacing between a computer and a Puzzlebot Robot usi
 #  Data Flow Diagram (DFD)
 Here we can observe the DFD of the system we used
 
+<p align="center">
+<img src="https://https://github.com/DevasNAI/Electro-Horchatas-Autonomous-Challenge/Images/DFD.png" width="50%" height="50%" title= "Data Flow Diagram" alt="DFD">
+</p>
+
 [localisation ROS Node] -> (/odom) -> [ROS-gRPC Wrapper] -> (odometryM) -> [gRPC-Client-FLASK] -> WebPage
 
 ## Odometry
