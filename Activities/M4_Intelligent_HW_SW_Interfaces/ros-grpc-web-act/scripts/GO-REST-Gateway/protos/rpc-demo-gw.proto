@@ -1,0 +1,38 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+package RPCDemoPkg;
+
+
+option go_package = "example.com/rest-gateway-demo/protos";
+import "google/api/annotations.proto";
+
+message MultCoords {
+//	Como se que vienen juntos, el packedtrue dice que vienen juntos
+repeated double values = 1 [packed=true];
+}
+
+message ImageResult {
+    bytes b64img = 1;
+    uint32 width = 2;
+    uint32 height = 3;
+}
+
+service RPCDemo {
+	rpc GetMultCoords (google.protobuf.Empty) returns (MultCoords){
+        option(google.api.http) = {
+            post: "/restgatewaydemo/getmultcoords"
+            body: "*"
+        };
+
+	};
+
+    rpc GetImageResult (google.protobuf.Empty) returns (ImageResult){
+        option(google.api.http) = {
+            post: "/restgatewaydemo/getimageresult"
+            body: "*"
+        };
+	};
+}
+
+
+

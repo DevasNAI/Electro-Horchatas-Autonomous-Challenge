@@ -77,15 +77,12 @@ class RPCDemoImpl(image_ceron_pb2_grpc.RPCDemoServicer):
         image = self.br.imgmsg_to_cv2(data)
         self.shape = image.shape
         #   Converts image to jpg and returns a bytes array
-        #   Convierte imagen en jpg, imencode regresa un arrego de bytes
         self.img_compressed = np.array(cv2.imencode('.jpg', image)[1]).tobytes()
-        #   Podemos multiplicar el tamaño de la imagen por cuanto mide en bytes cada casilla
         print("Memory size of original image in bytes:", image.size* image.itemsize)
         print("Memory size of compressed image in bytes:", len(self.img_compressed))
         print("Memory size of base64 image in bytes", len(base64.b64encode(self.img_compressed)))
 
         #   If we want to stream the puzzlebot's image on the PC, it would be ok to compress it to .jpg
-        #   Si queremos hacer streaming de la imagen del puzzlebot a la compu, estaria bien comprimirla con .jpg
         #self.img_compressed = base64.b64encode(self.img)
 
 
