@@ -1,0 +1,20 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+package RPCDemoPkg;
+
+message MultCoords {
+	//	Como se que vienen juntos, el packedtrue dice que vienen juntos
+	repeated double values = 1 [packed=true];
+}
+
+service RPCDemo {
+	rpc GetMultCoords (google.protobuf.Empty) returns (MultCoords){
+
+	};
+}
+
+message ImageResult {
+    bytes b64img = 1;
+    uint32 width = 2;
+    uint32 height = 3;
+}
