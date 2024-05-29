@@ -10,10 +10,9 @@
 
         <!-- Important Codes-->
         <node pkg="localisation" type="puzzlebot_sim.py" name="simulator" />
-        <node pkg="localisation" type="loc.py" name="localisation_node" output="screen"/>
-        <node pkg="localisation" type="joint_state_pub.py" name="joint_publisher_node"/>
-        <node pkg="localisation" type="controller_sim.py" name="controller_node" />
+        <node pkg="localisation" type="joint_state_pub.py" name="joint_publisher_node" />
         <node pkg="localisation" type="aruco.py" name="aruco_node"  />
+        <node pkg="localisation" type="aruco_follower.py" name="aruco_follower" output="screen"/>
 
         <!-- Robot State Publisher -->
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="simulated_state_publisher" />

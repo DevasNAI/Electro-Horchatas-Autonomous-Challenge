@@ -57,6 +57,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   Num.msg
+  ArucoDetected.msg
+  ArucosDetected.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -76,7 +78,10 @@ add_service_files(DIRECTORY srv
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   geometry_msgs   nav_msgs   sensor_msgs   std_msgs
+   geometry_msgs  
+   nav_msgs   
+   sensor_msgs  
+   std_msgs
  )
 
 ################################################
@@ -166,7 +171,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
-   scripts/localisation.py scripts/joint_state_pub.py scripts/puzzlebot_sim.py scripts/controller_sim.py scripts/controller_bug0.py scripts/controller_bug2.py
+   scripts/srv_aruco_client.py scripts/srv_aruco_follower_server.py scripts/aruco.py scripts/loc.py scripts/joint_state_pub.py scripts/puzzlebot_sim.py scripts/controller_sim.py scripts/controller_bug0.py scripts/controller_bug2.py scripts/aruco_follower.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

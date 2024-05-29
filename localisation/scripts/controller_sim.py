@@ -24,7 +24,7 @@ class Controller():
         self.goalPub = rospy.Publisher("/goal", PoseStamped, queue_size=1)
         self.goal.header.frame_id = "world"
         self.goal.pose.position.x = 2.0
-        self.goal.pose.position.y = 2.0
+        self.goal.pose.position.y = -0.3
 
     def cbGoal(self,goal_msg):
         self.goal = goal_msg
