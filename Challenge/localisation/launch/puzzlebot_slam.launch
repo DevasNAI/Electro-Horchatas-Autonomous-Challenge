@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+	<!-- Transformadas -->
+        <node pkg="tf2_ros" type="static_transform_publisher" name="map_joint" args="odomPose_x  odomPose_y  odomPose_z  odomPose_roll  odomPose_pitch  odomPose_yaw   map   odom"/>
+        <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0 0 0 -3.14 0 0 base_link laser 100"/> 
+	
+	<!-- Puzzlebot model for Rviz -->
+        <arg name="puzzlebot_sim_model" default="$(find localisation)/urdf/puzzlebot_jetson_ed_urdf.urdf"/>
+        <param name="robot_description" command="cat $(arg puzzlebot_sim_model)" />
+
+	<!-- Localization, Control and Navigation Nodes -->
+        <node pkg="localisation" type="localisationEKF.py" name="localisation_node" output="screen"/>
+        <node pkg="localisation" type="joint_state_pub.py" name="joint_publisher_node" output="screen"/>
+        
+	<!-- Robot State Publisher -->
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="simulated_state_publisher" output="screen"/>
+
+	<!-- Aruco Detection -->
+	<include file="$(find ros_deep_learning)/launch/aruco_detector.ros1.launch"/>
+
+	<!-- Launch Lidar, SLAM and Navigation separately-->
+	
+	<!-- Launch Rviz -->
+        <arg name="rvizconfig" default="$(find localisation)/rviz/Navigation.rviz" />
+      <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+</launch>
