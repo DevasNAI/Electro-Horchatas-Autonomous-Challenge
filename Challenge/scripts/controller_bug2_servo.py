@@ -17,7 +17,8 @@ class StateMachine(enum.Enum):
     WALL_FOLLOW = 3
     STOP = 4
     VISUAL_SERVO = 5
-    VISUAL_BASE = 6 
+    VISUAL_BASE = 6
+    REVERSE = 7
 
 class Bug2Controller:
     def __init__(self):
@@ -68,9 +69,13 @@ class Bug2Controller:
         self.aruco_base_x = 0.0
         self.aruco_base_y = 0.0
 
-        self.maxSpeed = 0.0175
-        self.p = 0.6
-        self.d = 0.1
+        self.maxSpeed_base = 0.025
+        self.p_base = 0.6
+        self.d_base = 0.1
+
+        self.maxSpeed_cube = 0.0175
+        self.p_cube = 0.6
+        self.d_cube = 0.2
 
         self.prev_error = 0.0
         self.prev_base_error = 0.0
@@ -82,9 +87,12 @@ class Bug2Controller:
         self.avgError = []
         self.avg_baseError = []
 
+        self.reverse_start_time = None
+
 
         self.base_flag = False #BASE APPROACH
         self.close_val = 116
+        self.open_val = 0
         self.cube = False
 
         # Initialize ROS publisher for velocity commands
@@ -148,7 +156,7 @@ class Bug2Controller:
             if self.aruco != None and 0 < self.aruco_x < 0.5 and self.cube == False:
                 self.current_state = StateMachine.VISUAL_SERVO  # Switch to APPROACH_CUBE state
         
-            elif self.aruco_base != None and 0 < self.aruco_base_x < 1 :
+            elif self.aruco_base != None and 0 < self.aruco_base_x < 0.6 and self.base_flag == False:
                 self.current_state = StateMachine.VISUAL_BASE   #Switch to APPROACH_BASE state
 
             self.cmd_vel.linear.x = 0.05
@@ -164,6 +172,9 @@ class Bug2Controller:
         self.distance_moved = math.sqrt((self.current_pose.pose.position.x - self.hitpoint.x)**2 + (self.current_pose.pose.position.y - self.hitpoint.y)**2)
         distance_to_line = math.sqrt((closestGoalLine_x - self.current_pose.pose.position.x)**2 + (closestGoalLine_y - self.current_pose.pose.position.y)**2)
 
+        if self.aruco_base != None and 0 < self.aruco_base_x < 0.6 and self.base_flag == False:
+            self.current_state = StateMachine.VISUAL_BASE #***same MOD as MOVE_TO_GOAL
+
 	    #print("Distance to line: ", distance_to_line)
         if distance_to_line < 0.1 and self.distance_moved > 0.5:
             distance_to_goal = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
@@ -172,9 +183,6 @@ class Bug2Controller:
             print(self.aruco_base_x)
             if self.aruco != None and 0 < self.aruco_x < 0.5 and self.cube == False:
                 self.current_state = StateMachine.VISUAL_SERVO #****MOD_SEB 
-
-            elif self.aruco_base != None and 0 < self.aruco_base_x < 1:
-                self.current_state = StateMachine.VISUAL_BASE #***same MOD as MOVE_TO_GOAL
 
             elif hitpoint_distance_to_goal > distance_to_goal:
                 self.cmd_vel.linear.x = 0.0
@@ -245,7 +253,7 @@ class Bug2Controller:
         current_time = rospy.get_time()
         dt = current_time - self.last_time
 
-        pd = self.p*error + self.d*(error - self.prev_base_error)/dt
+        pd = self.p_base*error + self.d_base*(error - self.prev_base_error)/dt
 
         self.prev_base_error = error
         self.last_time = current_time
@@ -260,16 +268,18 @@ class Bug2Controller:
 
         avg = avg/len(self.avg_baseError)
 
-        vel = abs(self.maxSpeed-(abs(float(avg))/1000))
+        vel = abs(self.maxSpeed_base-(abs(float(avg))/1000))
         line=round(vel,3)
 
         cmd_vel = Twist()
         cmd_vel.linear.x = line
         cmd_vel.angular.z = speed
-        if self.aruco_base_x <= 0.15:
+        if self.aruco_base_x <= 0.20:
             cmd_vel.linear.x = 0
-            self.current_state = StateMachine.STOP
+            #self.current_state = StateMachine.STOP
             self.cmd_vel_pub.publish(cmd_vel)
+            self.servo_pub.publish(self.open_val)
+            self.current_state = StateMachine.REVERSE
         else:
             self.cmd_vel_pub.publish(cmd_vel)
 
@@ -281,7 +291,7 @@ class Bug2Controller:
         current_time = rospy.get_time()
         dt = current_time - self.last_time
 
-        pd = self.p*error + self.d*(error - self.prev_error)/dt
+        pd = self.p_cube*error + self.d_cube*(error - self.prev_error)/dt
 
         self.prev_error = error
         self.last_time = current_time
@@ -296,7 +306,7 @@ class Bug2Controller:
 
         avg = avg/len(self.avgError)
 
-        vel = abs(self.maxSpeed-(abs(float(avg))/1000))
+        vel = abs(self.maxSpeed_cube-(abs(float(avg))/1000))
         line=round(vel,3)
 
         cmd_vel = Twist()
@@ -323,11 +333,28 @@ class Bug2Controller:
         cmd_vel.linear.x = 0.0
         cmd_vel.angular.z = 0.0
         self.cmd_vel_pub.publish(cmd_vel)
-        if self.cube == True:
-            self.servo_pub.publish(0)
-            print("Aruco entregado")
-        
+        #if self.cube == True:
+            #self.servo_pub.publish(0)
+            #print("Aruco entregado")
+
+        #se chinga el system ___seb
         #self.feedback = "origin"
+
+    def reverse(self):
+        cmd_vel = Twist()
+        cmd_vel.linear.x = -0.2
+        cmd_vel.angular.z = 0.0
+        self.cmd_vel_pub.publish(cmd_vel)
+
+        if self.reverse_start_time is None:
+            self.reverse_start_time = rospy.get_time()
+
+        if rospy.get_time() - self.reverse_start_time > 0.8:
+            self.current_state = StateMachine.STOP
+            self.base_flag = True
+            self.reverse_start_time = None
+
+
 
 
     def run(self):
@@ -346,6 +373,8 @@ class Bug2Controller:
                 self.follow_wall()
             elif self.current_state is StateMachine.STOP:
                 self.stop()
+            elif self.current_state is StateMachine.REVERSE:
+                self.reverse()
             print(self.current_state)
             
             #self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
@@ -356,11 +385,12 @@ class Bug2Controller:
             deltay = self.goal.pose.position.y - self.current_pose.pose.position.y
 
 
-            if deltax < 0.1 and deltay < 0.1 and self.current_state != StateMachine.STOP:  # Stop if the goal $
-                self.current_state = StateMachine.STOP
-                
+            #if deltax < 0.05 and deltay < 0.05 and self.current_state != StateMachine.STOP and self.base_flag ==True:  # Stop if the goal $
+                #self.current_state = StateMachine.STOP 
                 #self.goal_changer[newGoaliD]
                 #print("Found Goal!")
+
+            ##YA NO SE USA____SEB___
             
             self.rate.sleep()
 
