@@ -42,8 +42,8 @@ class localization:
         self.covariance64 = Float64MultiArray()
         #   Covariance constats
         #   CALIBRAR LOS PARAMETROS CON MINIMOS CUADRADOS
-        self.kr = 0.15
-        self.kl = 0.30913602108470944 
+        self.kr = 3
+        self.kl = 6.0913602108470944 
         self.SigmakPast = 0.0
 
         self.prevTime = rospy.Time.now()

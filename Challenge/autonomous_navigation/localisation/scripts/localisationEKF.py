@@ -6,9 +6,8 @@ from std_msgs.msg import Float32, Header, Float64MultiArray
 from geometry_msgs.msg import Twist, PoseWithCovariance, TwistWithCovariance, PoseStamped, Pose, Quaternion
 from nav_msgs.msg import Odometry
 from tf.transformations import quaternion_from_euler
-from ros_deep_learning.msg import ArucosDetected
+from ros_deep_learning.msg import ArucoDetected
 import tf
-import tf_conversions
 
 class Localisation:
     def __init__(self):
@@ -28,39 +27,36 @@ class Localisation:
         self.covariancePose = PoseWithCovariance()
         self.covarianceTwist = TwistWithCovariance()
         self.covariance64 = Float64MultiArray()
-        self.aruco_poses = []
+        self.aruco_pose = ArucoDetected()
         self.aruco = None
-	#self.kr = 0.01505
-	#self.kl = 0.0303
-        self.kr = 0.0001505
-        self.kl = 0.000303
+        self.kr = 0.15
+        self.kl = 0.30
+        # self.kr = 0.0001505
+        # self.kl = 0.000303
         self.SigmakPast = np.zeros([3,3])
         self.state = np.array([0.0, 0.0, 0.0])
         self.prevTime = rospy.Time.now()
         self.markers = {
-            1: [2, 3.03],
-            2: [3.14, 2.4965],
-            3: [3.14, 2.01],
-            4: [3.14,0],
-            5: [3,-0.364],
-            7: [1.506,-0.359],
-            8: [0,0.385],
-            9: [-0.309,0],
-            10: [-0.322,1.57],
-            11: [-0.282,3.0215],
-            12: [0,3.3225],
+            4: [3.14,0,0.0],
+            5: [3,-0.364, 4.71],
+            7: [1.506,-0.359, 4.71],
+            8: [0,0.385, 4.71],
+            9: [-0.309,0, 3.14],
+            10: [-0.322,1.57, 3.14],
+            11: [-0.282,3.0215, 3.14],
+            12: [0,3.3225, 1.57],
         }
         self.deadReck = [0,0,0]
         rospy.Subscriber("/wl", Float32, self.wl_cb)
         rospy.Subscriber("/wr", Float32, self.wr_cb)
         rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.cbGoal)
-        rospy.Subscriber("/aruco_detected", ArucosDetected, self.aruco_cb)
+        rospy.Subscriber("/aruco_kalman", ArucoDetected, self.aruco_cb)
         self.goalPub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
         self.odometry_pub = rospy.Publisher("/odom", Odometry, queue_size=1)
         self.tf_broadcaster = tf.TransformBroadcaster()
 
     def aruco_cb(self, msg):
-        self.aruco_poses = msg.arucos_detected
+        self.aruco_pose = msg
         
     def wl_cb(self, msg):
         self.wl = msg.data
@@ -92,6 +88,7 @@ class Localisation:
             [2 / self.l, -2 / self.l]
         ])
         Qk = np.dot(GradientOmegak, np.dot(Sigmadeltak, GradientOmegak.T))
+
         Sigmak = np.dot(Hk, np.dot(self.SigmakPast, Hk.T)) + Qk
         self.state = self.state + np.array([
             dt * self.linearX * np.cos(self.state[2]),
@@ -107,14 +104,14 @@ class Localisation:
         return Sigmak
 
     def post_covarianceCalculation(self, sigma):
-        if len(self.aruco_poses) == 0:
+
+        if self.aruco_pose == None:
             return sigma
-        aruco = self.aruco_poses[0]
-        if aruco.id == 6:
-            if len(self.aruco_poses) > 1:
-                aruco = self.aruco_poses[1]
-            else:
-                return sigma
+        elif self.aruco_pose.id not in self.markers:
+            return sigma
+        
+        aruco = self.aruco_pose
+
         marker_position = np.array([aruco.pose.position.x, aruco.pose.position.y])
         real_position = self.get_real_landmark_pos(aruco.id)
         deltax = real_position[0] - self.state[0]
@@ -128,13 +125,17 @@ class Localisation:
             [-deltax / np.sqrt(distance), -deltay / np.sqrt(distance), 0.0],
             [deltay / distance, -deltax / distance, -1.0]
         ])
-	#.25 y 0.125
-        Z = np.dot(G, np.dot(sigma, G.T)) + np.diag([0.25, 0.125])
+	    
+        #.25 y 0.125
+        Z = np.dot(G, np.dot(sigma, G.T)) + np.diag([0.02, 0.08])
         K = np.dot(sigma, np.dot(G.T, np.linalg.inv(Z)))
+        
         delta_real = marker_position.copy()
-        delta_real[0] = marker_position[0] + 0.085
+        delta_real[0] = marker_position[0] + 0.08
         distance_real = delta_real[0] ** 2 + delta_real[1] ** 2
-        error_angle = np.arctan2(delta_real[1], delta_real[0])
+
+        error_angle = np.arctan2(delta_real[1], delta_real[0]) - self.state[2]
+
         z_real = np.array([
             [np.sqrt(distance_real)],
             [error_angle]
@@ -143,6 +144,8 @@ class Localisation:
         rospy.loginfo("z_obs: %s", z_observed)
         self.state = self.state + np.dot(K, (z_real - z_observed).ravel())
         sigma = np.dot((np.eye(3) - np.dot(K, G)), sigma)
+        self.aruco_pose = None
+        
         return sigma
 
     def getOdometry(self):
