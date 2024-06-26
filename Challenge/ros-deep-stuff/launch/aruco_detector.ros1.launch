@@ -1,0 +1,7 @@
+<launch>
+
+    <node name="jetson_camera_publisher" pkg="ros_deep_learning" type="opencv_image.py" />
+    <node name="camera_info_publisher" pkg="ros_deep_learning" type="camera_info.py" />
+    <node name="aruco_detector" pkg="ros_deep_learning" type="aruco_detecter.py" output="screen" />
+
+</launch>
