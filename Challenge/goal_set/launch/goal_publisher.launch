@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<launch>
+    <rosparam file = "$(find goal_set)/config/goals.yaml" command = "load"  />
+    
+    <node name="goal_publisher" pkg="goal_set" type="goal_publisher.py" output="screen" />
+</launch>
