@@ -1,0 +1,11 @@
+#	GO-REST
+
+If you edit the proto file for the GO-REST Gateway, you must run the following commands. 
+```
+protoc -I ./protos -I /home/robotics/tools/googleapis --go_out ./protos --go_opt paths=source_relative --go-grpc_out ./protos --go-grpc_opt paths=source_relative rpc-demo-gw.proto
+protoc -I ./protos -I /home/robotics/tools/googleapis --plugin=protoc-gen-grpc-gateway=/home/robotics/tools/gw/protoc-gen-grpc-gateway-v2.15.2-linux-x86_64 --grpc-gateway_out ./protos --grpc-gateway_opt logtostderr=true --grpc-gateway_opt paths=source_relative rpc-demo-gw.proto
+go mod init example.com/rest-gateway-demo
+go mod tidy
+go build go-gateway.go
+go build go-gateway.go
+```
